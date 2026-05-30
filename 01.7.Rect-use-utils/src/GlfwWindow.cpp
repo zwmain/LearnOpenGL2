@@ -3,6 +3,7 @@
 #include <format>
 #include <iostream>
 #include <vector>
+#include <Color.h>
 
 namespace fs = std::filesystem;
 
@@ -118,11 +119,15 @@ void MainWindow::PrepareData()
         0.7f, -0.7f, 0.0f, // 矩形右下
         0.7f, 0.7f, 0.0f, // 矩形右上
     };
+    Color c1(210, 79, 75);
+    Color c2(138, 210, 75);
+    Color c3(75, 206, 210);
+    Color c4(147, 75, 210);
     std::vector<float> colors = {
-        0.894f, 0.231f, 0.219f, // 第一个顶点rgb
-        0.545f, 0.894f, 0.219f, // 第二个顶点rgb
-        0.219f, 0.882f, 0.894f, // 第三个顶点rgb
-        0.568f, 0.219f, 0.894f, // 第四个顶点rgb
+        c1.R(), c1.G(), c1.B(), // 第一个顶点rgb
+        c2.R(), c2.G(), c2.B(), // 第二个顶点rgb
+        c3.R(), c3.G(), c3.B(), // 第三个顶点rgb
+        c4.R(), c4.G(), c4.B(), // 第四个顶点rgb
     };
     std::vector<unsigned int> eleIndex = {
         0, 1, 2,
