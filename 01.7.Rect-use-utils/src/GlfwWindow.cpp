@@ -23,13 +23,6 @@ void KeyCallBack(GLFWwindow* window, int key, int scanmode, int action, int mods
     obj->OnKey(key, scanmode, action, mods);
 }
 
-// 将 0-255 的整数颜色值归一化到 0.0-1.0 之间，方便 glClearColor 使用
-float ToNormalizeColor(int v)
-{
-    v = std::max(std::min(v, 255), 0);
-    return static_cast<float>(v) / 255.0f;
-}
-
 } // namespace
 
 MainWindow::MainWindow(const char* title, int width, int height)
@@ -74,7 +67,8 @@ void MainWindow::Run()
     glViewport(0, 0, width, height);
 
     // 设置屏幕背景颜色：深蓝/灰色调
-    glClearColor(ToNormalizeColor(0x35), ToNormalizeColor(0x5c), ToNormalizeColor(0x7d), 1);
+    Color clearColor(0x35, 0x5c, 0x7d);
+    glClearColor(clearColor.R(), clearColor.G(), clearColor.B(), clearColor.A());
 
     // 准备顶点数据和着色器
     PrepareData();

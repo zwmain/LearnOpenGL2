@@ -737,3 +737,31 @@ void glDrawElements(
 ### 绘制矩形
 
 参考代码：[01.6.Rect-ebo](01.6.Rect-ebo/)
+
+### 封装Shader和Color
+
+在代码中会用到Shader，总是硬编码也不方便，因此需要封装一个shader类，管理shader program
+
+同时，为了方便，assets文件夹也会copy到程序二进制目录和执行目录
+
+```cmake
+
+# 复制到二进制文件目录
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${PROJECT_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+    COMMENT "Syncing assets to output directory"
+)
+
+# 复制到二进制文件目录的上层目录，实际为执行目录
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${PROJECT_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/../assets
+    COMMENT "Syncing assets to output directory"
+)
+
+```
+
+另外，总是用红绿蓝配色不好看，为了方便管理颜色，可以封装一个Color类，方便对颜色操作
+
+封装的工具都在 [00.utils](00.utils/) 目录下，作为静态库存在
