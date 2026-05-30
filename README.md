@@ -648,3 +648,9 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 带颜色的三角形，顶点位置和颜色分开存放 [01.2.Triangle-color-singlebuffer](01.2.Triangle-color-singlebuffer/)
 
 带颜色的三角形，顶点位置和颜色放在一起 [01.3.Triangle-color-interleavebuffer](01.3.Triangle-color-interleavebuffer/)
+
+用一个vao绘制两个三角形 [01.4.Triangle-multi-singlebuffer](01.4.Triangle-multi-singlebuffer/)
+
+尝试其他绘制mode [01.5.Triangle-drawmode](01.5.Triangle-drawmode/)
+
+用两个三角形绘制一个矩形 [01.6.Rect](01.6.Rect/)
