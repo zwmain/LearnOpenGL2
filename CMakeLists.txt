@@ -14,6 +14,8 @@ set(GLFW_LIBRARY_TYPE STATIC)
 add_subdirectory("00.3rd/glad")
 add_subdirectory("00.3rd/glfw")
 
+add_subdirectory("00.utils")
+
 add_subdirectory("01.1.Triangle")
 add_subdirectory("01.2.Triangle-color-singlebuffer")
 add_subdirectory("01.3.Triangle-color-interleavebuffer")
