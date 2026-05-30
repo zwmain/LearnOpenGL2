@@ -1,2 +1,650 @@
 # LearnOpenGL2
-Learn opengl again
+
+再一次学习opengl，不一样的收获
+
+克隆代码
+
+```shell
+git clone git@github.com:zwmain/LearnOpenGL2.git --recursive
+```
+
+glfw地址 [https://www.glfw.org/](https://www.glfw.org/)
+
+glfw github地址 [https://github.com/glfw/glfw](https://github.com/glfw/glfw)
+
+glad地址 [https://gen.glad.sh/](https://gen.glad.sh/)
+
+坐标系工具 [https://www.geogebra.org](https://www.geogebra.org/classic?lang=zh_CN)
+
+调色板工具 [https://www.sojson.com/web/panel.html](https://www.sojson.com/web/panel.html)
+
+## 01.Triangle
+
+从绘制一个简单的三角形开始，重点在于了解基础概念
+
+先看一下几个名词
+
+- 顶点缓冲对象：Vertex Buffer Object，VBO
+- 顶点数组对象：Vertex Array Object，VAO
+- 元素缓冲对象：Element Buffer Object，EBO 或 索引缓冲对象 Index Buffer Object，IBO
+
+### 什么是VBO
+
+顶点缓冲对象，Vertex Buffer Object，VBO，表示了在GPU显存上的一段存储空间对象。
+
+```c++
+std::vector<float> vertices = {
+    -0.5f, -0.5f, 0.0f, // 左下角顶点
+    0.5f, -0.5f, 0.0f,  // 右下角顶点
+    0.0f, 0.5f, 0.0f    // 顶部顶点
+};
+```
+
+我们在C++中准备的顶点，就会在GPU上的显存中放置，vbo就是用来在C++中管理数据的东西
+
+vbo只是数据，只是buffer，任何可以描述成二进制的东西，都可以存到vbo中
+
+后面我们还会往vbo中存储颜色、纹理、等其他数据
+
+在C++中，我们对vbo的操作，需要通过一个`unsigned int`实现，这个变量就是vbo的唯一id，所有的操作都只能都过这个id进行
+
+### VBO的操作方法
+
+#### VBO的创建与销毁
+
+```c++
+void glGenBuffers(GLsizei n, GLuint* buffers)
+```
+
+- n: 创建多少个vbo
+- buffers: 创建出来的vbo id列表的首地址
+
+比如只创建一个vbo：
+
+```c++
+unsigned int VBO = 0;
+glGenBuffers(1, &VBO);
+```
+
+如果需要创建很多个vbo，可以这样写：
+
+```c++
+std::vector<unsigned int> vboArr(5); // 5个vbo数组
+glGenBuffers(vboArr.size(), vboArr.data()); // 将数组首地址传递给接口
+```
+
+VBO的销毁，接口和创建一样，理解了创建vbo，销毁就没什么好说的
+
+```c++
+void glDeleteBuffers(GLsizei n, GLuint * buffers)
+```
+
+#### VBO绑定与数据传输
+
+了解过opengl的，或多或少都了解opengl是一个状态机
+
+同时opengl状态机里只能存在一个vbo，也就是有个当前vbo，需要根据需求，将新的vbo绑定到当前vbo上
+
+![opengl状态机](00.assets/01.01.png)
+
+因此也就有了绑定，也就是我们手动将vbo id设置为当前的vbo
+
+![opengl绑定](00.assets/01.02.png)
+
+绑定接口为：
+
+```c++
+void glBindBuffer(GLenum target, GLuint buffer);
+```
+
+- target: 把vbo绑定到哪个插槽，一般为`GL_ARRAY_BUFFER`，其他详细信息问AI
+- buffer: vbo的id，也就是`glGenBuffers`创建出来的东西
+
+vbo数据填充接口：
+
+```c++
+void glBufferData(GLenum target, GLsizeiptr size, const void * data, GLenum usage)
+```
+
+- target: 针对状态机的哪个插槽的buffer，这个要和bind时的target一致
+- size: buffer的数据大小，单位为字节
+- data: 数据的首地址指针
+- usage: 当前buffer的用法，有两个选项
+  - GL_STATIC_DRAW: vbo数据不会频繁改变
+  - GL_DYNAMIC_DRAW: vbo数据会频繁改变
+
+`glBufferData`才会为gpu真正的开辟显存，存入数据
+
+如果绑定完，操作完，想要取消绑定，直接绑定0就行
+
+在实际使用vbo时，就像下面代码这样。准备原始数据、创建vbo id、绑定vbo到状态机、将数据传递到gpu上对应vbo id的显存上。
+
+```c++
+std::vector<float> vertices = {
+    -0.5f, -0.5f, 0.0f, // 左下角顶点
+    0.5f, -0.5f, 0.0f,  // 右下角顶点
+    0.0f, 0.5f, 0.0f    // 顶部顶点
+};
+glGenBuffers(1, &VBO);
+glBindBuffer(GL_ARRAY_BUFFER, VBO);
+glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+```
+
+多个vbo也一样处理，记得用哪个vbo就要绑定哪个vbo id，opengl同一时间只能存在一个vbo
+
+### VBO与多属性存储
+
+顶点除了有位置信息外，还有有颜色、纹理、法线等其他各种属性
+
+以颜色为例，颜色数据长这样：
+
+```c++
+std::vector<float> colors = {
+    1.0f, 0.0f, 0.0f, // 第一个顶点rgb
+    0.0f, 1.0f, 0.0f, // 第二个顶点rgb
+    0.0f, 0.0f, 1.0f  // 第三个顶点rgb
+};
+```
+
+只看数据形式，这就是一个float数组，与顶点数据没有任何区别，因此也由vbo管理
+
+既然也由vbo管理，那么就有不同的存储方式：
+
+- 不同属性各自存储为一个vbo（single buffer）。顶点用一个vbo，颜色也用一个vbo
+- 所有属性放在同一个vbo里面，交叉存储（interleaved buffer）
+
+交叉存储就像下面这样：
+
+```c++
+std::vector<float> vertices = {
+    -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // 第一个顶点的位置和颜色rgb
+     0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // 第二个顶点的位置和颜色rgb
+     0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f  // 第三个顶点的位置和颜色rgb
+};
+```
+
+数据都存在了一起，那么显卡该怎么解析这坨数据呢
+
+这时就需要VAO来描述这些数据了
+
+### VAO解析
+
+#### VAO的含义与作用
+
+参考[bilibli视频教程](https://www.bilibili.com/video/BV1wC4y167gr?spm_id_from=333.788.videopod.sections&vd_source=253665670f58711b6090f7dd6968a8a2)
+
+顶点数组对象，Vertex Array Object，VAO。存储一个图形的所有顶点的**描述**信息
+
+给定一个三角形的三个顶点，这次我们没有做格式化，看起来就是一串浮点数据
+
+在gpu眼里，这就是一串二进制数据，你不告诉gpu怎么解析这串数据的话，它是画不出三角形的
+
+```txt
+-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f
+```
+
+我们尝试描述一下这串数据：
+
+- 每个顶点3个数字
+- 每个数字都是float类型，也就是4个字节，xyz共同组成一个点，就要用12个字节
+- 从一个顶点，跳到下一个顶点，要跳12字节，也就是步长是12个字节
+
+上面只是简单情况，步长显得有点多余，因为已知顶点类型和数字数量，步长可以直接算出来
+
+但是，一串数据可能包含了不只顶点位置数据，比如还有颜色属性
+
+```c++
+std::vector<float> vertices = {
+    -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // 第一个顶点的位置和颜色rgb
+     0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // 第二个顶点的位置和颜色rgb
+     0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f  // 第三个顶点的位置和颜色rgb
+};
+```
+
+此时，我们再尝试解析这个vbo
+
+- 每个顶点有3个位置数据，紧接着有3个颜色数据
+- 每个数据都是float类型，4字节，xyz+rgb共6个数字组成一个顶点，要用24字节
+- 从一个顶点的**位置信息**跳到下一个顶点的位置信息，需要跳24字节；颜色信息，在一组顶点数据内部，还需要偏移12字节
+
+因此，步长是非常重要的一个参数
+
+再来看另外一种情况，顶点位置和颜色分开存储：
+
+```c++
+std::vector<float> vertices = {
+    -0.5f, -0.5f, 0.0f, // 左下角顶点
+    0.5f, -0.5f, 0.0f,  // 右下角顶点
+    0.0f, 0.5f, 0.0f    // 顶部顶点
+};
+std::vector<float> colors = {
+    1.0f, 0.0f, 0.0f, // 第一个顶点rgb
+    0.0f, 1.0f, 0.0f, // 第二个顶点rgb
+    0.0f, 0.0f, 1.0f  // 第三个顶点rgb
+};
+```
+
+由于分开存储，各自有一个自己的vboId，那么vao在描述顶点属性的时候，就需要知道描述的是哪个vbo，就像下面这样。0号位置放的是位置，1号放的是颜色数据，2号放的是纹理等等
+
+![vao](00.assets/01.03.png)
+
+现在我们可以总结，对于三角形的某个属性，我们需要知道的描述信息为：
+
+- 每个顶点xxx个数字
+- 每个数字都是xxx类型
+- 每个顶点的数据到下个顶点的数据步长为xxx字节
+- 此属性数据在顶点数据内的偏移量
+- 此属性存在xxx号vbo
+
+就像下面这样
+
+![vao与vbo](00.assets/01.04.png)
+
+或者所有属性都放在一个vbo里
+
+![vao与vbo2](00.assets/01.05.png)
+
+
+#### VAO的创建与删除
+
+VAO的创建
+
+```c++
+void glGenVertexArrays(GLsizei n, GLuint* arrays);
+```
+
+- n: 创建多少个vao
+- arrays: 创建出来的vao数组的首地址
+
+VAO的删除
+
+```c++
+void glDeleteVertexArrays(GLsizei n, const GLuint* arrays);
+```
+
+- n: 删除多少个vao
+- arrays: 要删除的vao数组的首地址
+
+VAO的绑定
+
+```c++
+void glBindVertexArray(GLuint array);
+```
+
+- array: vao的编号，id
+
+激活vao属性插槽
+
+```c++
+void glEnableVertexAttribArray(GLuint index);
+```
+
+- index: 激活哪个属性插槽，与`glVertexAttribPointer`的index参数对应
+
+给vao加属性时，一定要先激活对应插槽
+
+
+VAO加入属性描述，最重要
+
+```c++
+void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void * pointer);
+```
+
+- index: 描述第几个属性
+- size: 这个属性包含几个数字
+- type: 这个属性是什么数据类型
+- normalized: 是否归一化（一般用不到）
+- stride: 每个顶点的数据步长
+- pointer: 这个属性在每个顶点内的偏移量
+
+看一下这些参数，似乎这里并没有指定vao的地方，那么该怎么告诉vao要用哪个vbo呢
+
+opengl是个状态机，当前只有一个绑定的vbo，绑定的是哪个vbo，这个函数用的就是哪个vbo
+
+
+顺便说一下用不到的`normalized`参数。仅对非浮点型数据类型（如 `GL_BYTE`、`GL_UNSIGNED_BYTE` 等）生效，用于控制整数数据在传递到顶点着色器前是否进行归一化处理。当 `normalized = GL_TRUE` 时，整数数据会被自动缩放到 `[-1.0, 1.0]`（有符号类型）或 `[0.0, 1.0]`（无符号类型） 的浮点范围；若为 `GL_FALSE`，则直接转换为浮点数而不归一化。对于浮点类型（如 `GL_FLOAT`），此参数无效。
+
+#### VAO总结
+
+一般情况下vao的使用流程如下，这里是有多个vbo的使用流程：
+
+```c++
+// 定义一个简单三角形的三个顶点位置
+std::vector<float> vertices = {
+    -0.5f, -0.5f, 0.0f, // 左下角顶点
+    0.5f, -0.5f, 0.0f, // 右下角顶点
+    0.0f, 0.5f, 0.0f // 顶部顶点
+};
+std::vector<float> colors = {
+    1.0f, 0.0f, 0.0f, // 第一个顶点rgb
+    0.0f, 1.0f, 0.0f, // 第二个顶点rgb
+    0.0f, 0.0f, 1.0f // 第三个顶点rgb
+};
+
+unsigned int vertexVboId = 0;
+// 创建 VBO（顶点缓冲对象）并上传顶点数据到 GPU
+glGenBuffers(1, &vertexVboId);
+glBindBuffer(GL_ARRAY_BUFFER, vertexVboId);
+glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+glBindBuffer(GL_ARRAY_BUFFER, 0); // 解绑顶点vbo，为其他vbo做准备
+
+unsigned int colorVboId = 0;
+// 创建另一个 VBO 用于颜色数据，并上传到 GPU
+glGenBuffers(1, &colorVboId);
+glBindBuffer(GL_ARRAY_BUFFER, colorVboId);
+glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(float), colors.data(), GL_STATIC_DRAW);
+glBindBuffer(GL_ARRAY_BUFFER, 0); // 解绑颜色vbo，为其他vbo做准备
+
+unsigned int vaoId = 0;
+// 创建 VAO（顶点数组对象）并记录顶点属性配置
+glGenVertexArrays(1, &vaoId);
+// 由于vao描述了整个图形，后面的多个vbo都由vao描述，因此整个过程vao一直保持激活状态
+glBindVertexArray(vaoId);
+
+// 此时没有任何激活的vbo，因此后面每次添加描述的时候都要绑定对应的vbo
+
+// 告诉 OpenGL 顶点数据的布局：位置属性在 location 0，3 个 float，紧密排列
+glBindBuffer(GL_ARRAY_BUFFER, vertexVboId); // 绑定顶点vbo，描述才会效
+glEnableVertexAttribArray(0); // 启用属性 location 0，顶点数据将会放置0位置
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),(void*)0);
+glBindBuffer(GL_ARRAY_BUFFER, 0); // 顶点vbo已经描述完毕，解绑顶点vbo，为颜色vbo做准备，vao仍然保持激活状态
+
+// 告诉 OpenGL 颜色数据的布局：颜色属性在 location 1，3 个 float，紧密排列
+glBindBuffer(GL_ARRAY_BUFFER, colorVboId); // 绑定颜色vbo，描述才会生效
+glEnableVertexAttribArray(1); // 启用属性 location 1，颜色数据将会放置到1位置
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+glBindBuffer(GL_ARRAY_BUFFER, 0); // 颜色vbo已经描述完毕，解绑颜色vbo，vao仍然保持激活状态
+
+// vbo以全部描述完毕，vao可以解绑了；解绑VAO，使状态不会意外影响后续操作
+glBindVertexArray(0);
+
+```
+
+再看看交叉存储的vbo是如何配合vao使用的：
+
+```c++
+// 定义一个简单三角形的三个顶点位置和颜色属性
+std::vector<float> vertices = {
+    -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // 左下角顶点坐标和rgb
+    0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // 右下角顶点和rgb
+    0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f // 顶部顶点和rgb
+};
+
+unsigned int vertexVboId = 0;
+// 创建 VBO（顶点缓冲对象）并上传顶点数据到 GPU
+glGenBuffers(1, &vertexVboId);
+glBindBuffer(GL_ARRAY_BUFFER, vertexVboId);
+glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+glBindBuffer(GL_ARRAY_BUFFER, 0); // 解绑顶点vbo，放置干扰其他vbo，不过这里只有这一个vbo
+
+unsigned int vaoId = 0;
+// 创建 VAO（顶点数组对象）并记录顶点属性配置
+glGenVertexArrays(1, &vaoId);
+// 由于vao描述了整个图形，后面的多个vbo都由vao描述，因此整个过程vao一直保持激活状态
+glBindVertexArray(vaoId);
+
+
+// 此时没有任何激活的vbo，因此后面每次添加描述的时候都要绑定对应的vbo
+
+// 告诉 OpenGL 顶点数据的布局：位置属性在 location 0，3 个 float，紧密排列
+// 颜色属性在每个顶点的第 3 个 float 之后，3 个 float，紧密排列
+glBindBuffer(GL_ARRAY_BUFFER, vertexVboId); // 绑定vbo，描述才会生效
+glEnableVertexAttribArray(0); // 启用属性 location 0，顶点数据将会放置到0位置
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0); // 这里步长为6个float，偏移为0
+// 这里直接开始描述第二个属性
+glEnableVertexAttribArray(1); // 启用属性 location 1，颜色数据将会放置到1位置
+// 这里步长为6个float，偏移为3个float（位置属性占用3个float）
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+glBindBuffer(GL_ARRAY_BUFFER, 0); // 顶点vbo已经描述完毕，解绑顶点vbo，为颜色vbo做准备，vao仍然保持激活状态
+
+// vbo以全部描述完毕，vao可以解绑了；解绑VAO，使状态不会意外影响后续操作
+glBindVertexArray(0);
+
+```
+
+我们再来看看vao location和着色器之间的关系
+
+直接上图，从图里可以看到，代码里的`glVertexAttribPointer` index参数就是顶点着色器里的location
+
+![vao location](00.assets/01.06.png)
+
+
+最后的最后，一定要记住，一个vao就可以完全代表一个图形，现在是一个三角形，后面会代表整个3D模型
+
+### 着色器
+
+着色器代表着材质，也就是材质。在 OpenGL 中，着色器是用 GLSL（OpenGL Shading Language）语言编写的程序代码。
+
+#### GLSL 语言简介
+
+- **顶点着色器**：处理每个顶点的数据（位置、颜色、纹理坐标等），输出 clip space 坐标
+- **片元着色器**：处理每个像素（片元），计算最终的颜色值
+
+```cpp
+// 顶点着色器示例
+#version 460 core
+layout (location = 0) in vec3 aPos; // 输入位置数据
+void main() {
+    gl_Position = vec4(aPos, 1.0); // 输出 clip space 坐标
+}
+
+// 片元着色器示例
+#version 460 core
+out vec4 FragColor; // 输出片元的颜色
+void main() {
+    FragColor = vec4(1.0, 1.0, 1.0, 1.0); // 设置片元颜色
+}
+```
+
+#### ShaderProgram 对象
+
+OpenGL 使用程序对象来管理着色器代码的编译和链接。
+
+##### ShaderSource：着色器源码字符串
+
+在 OpenGL 中，着色器的源码是存储在内存中的字符串，需要通过 `glShaderSource` 接口传递给 GPU。
+
+##### glCreateShader 创建着色器对象
+
+```cpp
+GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER); // 创建顶点着色器
+GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER); // 创建片元着色器
+```
+
+- 返回值：着色器对象的 ID（unsigned int）
+- GL_VERTEX_SHADER：指定创建的是顶点着色器
+- GL_FRAGMENT_SHADER：指定创建的是片元着色器
+
+##### glShaderSource 设置源码到着色器对象
+
+```cpp
+std::string vertexShaderSource = R"(
+#version 460 core
+layout (location = 0) in vec3 aPos;
+void main() {
+    gl_Position = vec4(aPos, 1.0);
+}
+)";
+
+glShaderSource(vertexShader, 1, &vertexShaderSource.c_str(), nullptr);
+```
+
+- shader：着色器对象的 ID
+- count：源码字符串的个数（通常是一个）
+- strings：源码字符串的首地址（使用&取址符）
+- lengths：每个源码的长度（nullptr 表示使用字符串实际长度）
+
+##### glCompileShader 编译着色器程序
+
+```cpp
+glCompileShader(vertexShader);
+```
+
+编译后可以通过 `glGetShaderiv` 接口检查编译是否成功。
+
+##### glCreateProgram 创建 ShaderProgram 对象
+
+```cpp
+GLuint shaderProgram = glCreateProgram();
+```
+
+返回程序对象的 ID，用于后续附加和链接着色器。
+
+##### glAttachShader 将着色器附加到程序
+
+```cpp
+glAttachShader(shaderProgram, vertexShader);
+glAttachShader(shaderProgram, fragmentShader);
+```
+
+- program：程序对象的 ID
+- shader：要附加的着色器对象的 ID
+
+##### glLinkProgram 链接程序
+
+```cpp
+glLinkProgram(shaderProgram);
+```
+
+将程序中所有已附加的着色器进行链接，形成一个可执行的程序。
+
+##### 使用后删除单个着色器
+
+```cpp
+glDeleteShader(vertexShader);
+glDeleteShader(fragmentShader);
+```
+
+因为着色器已经合并到 ShaderProgram 中，可以安全删除单独的着色器对象来释放内存。
+
+##### 使用 ShaderProgram 渲染
+
+```cpp
+// 绑定程序对象（每次绘制前需要激活）
+glUseProgram(shaderProgram);
+
+// 执行 glDrawArrays 进行绘制
+glDrawArrays(GL_TRIANGLES, 0, 3);
+
+// 使用后解绑程序
+glUseProgram(0);
+```
+
+##### OpenGL 核心接口说明
+
+| 接口 | 功能 |
+|------|------|
+| `glCreateShader(type)` | 创建着色器对象（返回 GLuint） |
+| `glShaderSource(shader, count, strings, lengths)` | 设置着色器源码 |
+| `glCompileShader(shader)` | 编译着色器程序 |
+| `glGetShaderiv(shader, pname, params)` | 获取着色器状态（如是否编译成功） |
+| `glCreateProgram()` | 创建 ShaderProgram 对象 |
+| `glAttachShader(program, shader)` | 将着色器附加到程序 |
+| `glLinkProgram(program)` | 链接程序中的所有着色器 |
+| `glUseProgram(program)` | 激活指定的程序对象 |
+| `glDeleteShader(shader)` | 删除单个着色器对象 |
+
+##### 编译和链接状态检查
+
+```cpp
+GLint success;
+GLchar infoLog[512];
+
+// 检查顶点着色器编译状态
+glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+if (!success) {
+    glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
+    std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n"
+              << infoLog << std::endl;
+}
+
+// 检查程序链接状态
+glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+if (!success) {
+    glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+    std::cout << "ERROR::PROGRAM::LINKING_FAILED\n"
+              << infoLog << std::endl;
+}
+```
+
+#### 完整示例代码：带颜色的三角形着色程序
+
+```cpp
+// 顶点着色器源码
+const char* vertexShaderSource = R"(
+#version 460 core
+layout (location = 0) in vec3 aPos;
+void main() {
+    gl_Position = vec4(aPos, 1.0);
+}
+)";
+
+// 片元着色器源码
+const char* fragmentShaderSource = R"(
+#version 460 core
+out vec4 FragColor;
+void main() {
+    FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+}
+)";
+
+int main() {
+    // 创建并编译顶点着色器
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+    glCompileShader(vertexShader);
+
+    // 创建并编译片元着色器
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
+    glCompileShader(fragmentShader);
+
+    // 创建程序对象并附加着色器
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    // 使用后删除单个着色器
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    // ...（顶点数据准备等）...
+
+    while (window.isRunning) {
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        // 使用程序对象
+        glUseProgram(shaderProgram);
+
+        // 绘制三角形
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glDeleteProgram(shaderProgram);
+    return 0;
+}
+```
+
+### 绘制命令，开始绘制三角形
+
+绘制命令，向GPU发出渲染指令Draw Call
+
+```c++
+void glDrawArrays(GLenum mode, GLint first, GLsizei count);
+```
+
+- mode: 绘制模式（GL_TRIANGLES, GL_LINES）
+- first: 从第几个顶点开始绘制
+- count: 绘制几个顶点的数据，以三角形为例，如果顶点数目不够三个，则会跳过绘制
+
+
+简单的一个三角形，只有顶点 [01.1.Triangle](01.1.Triangle/)
+
+带颜色的三角形，顶点位置和颜色分开存放 [01.2.Triangle-color-singlebuffer](01.2.Triangle-color-singlebuffer/)
+
+带颜色的三角形，顶点位置和颜色放在一起 [01.3.Triangle-color-interleavebuffer](01.3.Triangle-color-interleavebuffer/)
