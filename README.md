@@ -654,3 +654,86 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 尝试其他绘制mode [01.5.Triangle-drawmode](01.5.Triangle-drawmode/)
 
 用两个三角形绘制一个矩形 [01.6.Rect](01.6.Rect/)
+
+### EBO/IBO
+
+元素缓冲对象：Element Buffer Object，EBO 或 索引缓冲对象 Index Buffer Object，IBO，用于存储顶点绘制顺序索引号的GPU显存区域
+
+在绘制矩形的时候，用两个三角形共6个顶点才能绘制一个矩形，而一个矩形只需要4个顶点，我们应该可以复用一条边的
+
+复用的方法就是使用EBO。先看一个概念，顶点索引
+
+顶点索引：用于描述一个三角形使用那几个顶点数据的数字序列
+
+![顶点索引](00.assets/01.07.png)
+
+给定一组顶点数据，再给一个用哪些顶点的数据结构，就可以描述出一个图形
+
+同一组顶点数据，用不同的索引描述，也可以画出不同的图形
+
+![顶点索引2](00.assets/01.08.png)
+
+我们来算一下用不用ebo情况下，占用的空间大小
+
+不用ebo：6个顶点，一个顶点有位置和color，6个数字；那么一共就消耗144字节
+
+用ebo：4个顶点，一个顶点有位置和color，6个数字；还有6个索引数字；一共消耗120字节
+
+可以发现，这只是位置和颜色，如果再加上纹理、法线等数据，使用顶点索引会大量节省数据
+
+在顺便说一下，如果只有位置数据，那么引入ebo会导致总数居更大，不划算；但是现实中，不可能只有位置数据
+
+#### EBO的创建和使用
+
+EBO也是一块显存区域，和vbo的创建很像
+
+```c++
+std::vector<unsigned int> eleIndex = {
+    0, 1, 2,
+    1, 2, 3
+};
+unsigned int ebo = 0;
+glGenBuffers(1, &ebo);
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+glBufferData(GL_ELEMENT_ARRAY_BUFFER, eleIndex.size() * sizeof(float), eleIndex.data(), GL_STATIC_DRAW);
+```
+
+可以发现，其实就是`GL_ELEMENT_ARRAY_BUFFER`这个参数和vbo不一样
+
+ebo的绑定：ebo绑定的时候，需要当前存在绑定的vao，表示当前ebo与vao关联
+
+```c++
+glBindVertexArray(vao); // 先绑定vao或者让vao已经处于绑定状态
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+```
+
+不仅绑定时有顺序，解绑时也有严格限制：
+
+千万不要在 VAO 处于活动状态（已绑定）时，去解绑 EBO（即调用 `glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)`）！
+
+```c++
+glBindVertexArray(0);
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+```
+
+#### EBO绘制
+
+使用ebo绘制就不再是用`glDrawArrays`了而是`glDrawElements`
+
+```c++
+void glDrawElements(
+    GLenum mode,        // 图元绘制模式
+    GLsizei count,      // 索引数量
+    GLenum type,        // 索引数据类型
+    const void *indices // 索引偏移量
+);
+```
+
+- mode: 绘制模式，`GL_TRIANGLES`、`GL_LINES`
+- count: 索引数量
+- type: 索引类型，一般是`unsigned int`
+- indices: 偏移量，从索引数组的第几个索引开始。直接指向索引数组的指针（现代 OpenGL 已弃用此方式，必须使用 EBO）
+
+### 绘制矩形
+
+参考代码：[01.6.Rect-ebo](01.6.Rect-ebo/)
