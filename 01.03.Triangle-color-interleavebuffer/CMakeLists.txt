@@ -1,4 +1,4 @@
-project("01.3.Triangle-color-interleavebuffer" LANGUAGES CXX)
+project("01.03.Triangle-color-interleavebuffer" LANGUAGES CXX)
 
 file(GLOB SOURCES "src/*.cpp")
 file(GLOB HEADERS "src/*.h")

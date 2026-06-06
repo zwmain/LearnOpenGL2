@@ -1,4 +1,4 @@
-project("01.4.Triangle-multi-singlebuffer" LANGUAGES CXX)
+project("01.04.Triangle-multi-singlebuffer" LANGUAGES CXX)
 
 file(GLOB SOURCES "src/*.cpp")
 file(GLOB HEADERS "src/*.h")

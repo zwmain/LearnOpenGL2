@@ -1,4 +1,4 @@
-project("01.6.Rect-ebo" LANGUAGES CXX)
+project("01.07.Rect-ebo" LANGUAGES CXX)
 
 file(GLOB SOURCES "src/*.cpp")
 file(GLOB HEADERS "src/*.h")

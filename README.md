@@ -765,3 +765,32 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 另外，总是用红绿蓝配色不好看，为了方便管理颜色，可以封装一个Color类，方便对颜色操作
 
 封装的工具都在 [00.utils](00.utils/) 目录下，作为静态库存在
+
+### glsl语法、数据类型、向量操作
+
+到目前为止，我们关于着色器，只是用了基本内容
+
+详细一点的内容可以看 [着色器基础](docs/02.GLSL-Basic.md)
+
+顶点着色器和片段着色器都可以承接上一个步骤的计算或者属性输入
+
+代码里的glVertexAttribPointer index参数就是顶点着色器里的location
+
+顶点着色器可以声明输出，然后传递给片段着色器
+
+```glsl
+// 顶点着色器里面
+out vec3 color;
+
+// 片段着色器
+in vec3 color
+```
+
+变量名必须一致
+
+在之前，着色器里面，都是写死`layout (location = 0) in vec3 aPos`，对应的代码也是写死index参数
+
+但是也可以不用location变量，可以动态获取属性编号
+
+![动态获取属性编号](00.assets/01.09.png)
+

@@ -1,4 +1,4 @@
-project("01.7.Rect-use-utils" LANGUAGES CXX)
+project("01.08.Rect-use-utils" LANGUAGES CXX)
 
 file(GLOB SOURCES "src/*.cpp")
 file(GLOB HEADERS "src/*.h")

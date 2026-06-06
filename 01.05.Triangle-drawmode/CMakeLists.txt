@@ -1,4 +1,4 @@
-project("01.5.Triangle-drawmode" LANGUAGES CXX)
+project("01.05.Triangle-drawmode" LANGUAGES CXX)
 
 file(GLOB SOURCES "src/*.cpp")
 file(GLOB HEADERS "src/*.h")
