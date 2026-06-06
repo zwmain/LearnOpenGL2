@@ -1,4 +1,4 @@
-project("01.2.Triangle-color-singlebuffer" LANGUAGES CXX)
+project("01.02.Triangle-color-singlebuffer" LANGUAGES CXX)
 
 file(GLOB SOURCES "src/*.cpp")
 file(GLOB HEADERS "src/*.h")

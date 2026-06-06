@@ -1,4 +1,4 @@
-project("01.1.Triangle" LANGUAGES CXX)
+project("01.01.Triangle" LANGUAGES CXX)
 
 file(GLOB SOURCES "src/*.cpp")
 file(GLOB HEADERS "src/*.h")
