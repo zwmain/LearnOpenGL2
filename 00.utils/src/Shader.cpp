@@ -117,3 +117,9 @@ int Shader::GetAttrLocation(const std::string& attrName) const
 {
     return glGetAttribLocation(programId_, attrName.c_str());
 }
+
+void Shader::SetUniform1f(const std::string& name, float value) const
+{
+    int location = glGetUniformLocation(programId_, name.c_str());
+    glUniform1f(location, value);
+}
