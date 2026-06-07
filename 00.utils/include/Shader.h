@@ -15,6 +15,8 @@ public:
     // 清除当前绑定的程序
     void ClearProgram() const;
 
+    int GetAttrLocation(const std::string& attrName) const;
+
 private:
     unsigned int programId_ {};
 };

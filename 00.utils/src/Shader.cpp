@@ -112,3 +112,8 @@ void Shader::ClearProgram() const
 {
     glUseProgram(0);
 }
+
+int Shader::GetAttrLocation(const std::string& attrName) const
+{
+    return glGetAttribLocation(programId_, attrName.c_str());
+}
