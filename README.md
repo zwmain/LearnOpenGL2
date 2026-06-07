@@ -768,6 +768,8 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 ### glsl语法、数据类型、向量操作
 
+#### glsl基础
+
 到目前为止，我们关于着色器，只是用了基本内容
 
 详细一点的内容可以看 [着色器基础](docs/02.GLSL-Basic.md)
@@ -794,3 +796,35 @@ in vec3 color
 
 ![动态获取属性编号](00.assets/01.09.png)
 
+使用glsl动态获取属性编号的示例可以看 [动态获取属性编号](01.09.Rect-glsl/)
+
+#### Uniform变量
+
+Shader在执行运算的时候，彼此之间的数据不共享，但是指令一致
+
+uniform相当于一个全局变量，且可以通过C/C++程序传递给着色器程序
+
+uniform操作方法
+
+![uniform操作](00.assets/01.10.png)
+
+uniform变量定义
+
+```glsl
+uniform vec3 direction;
+uniform float timeVal;
+```
+
+uniform变量传递
+
+```c++
+int location = glGetUniformLocation(programId_, name.c_str());
+glUniform1f(location, value);
+```
+
+可以比较容易看出来
+
+```c++
+glUniform1f(); //对应uniform float xxx;
+glUniform3f(); //对应uniform vec3 xxx;
+```

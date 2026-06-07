@@ -15,6 +15,11 @@ public:
     // 清除当前绑定的程序
     void ClearProgram() const;
 
+    // 获取属性位置
+    int GetAttrLocation(const std::string& attrName) const;
+
+    void SetUniform1f(const std::string& name, float value) const;
+
 private:
     unsigned int programId_ {};
 };
