@@ -19,6 +19,7 @@ public:
     int GetAttrLocation(const std::string& attrName) const;
 
     void SetUniform1f(const std::string& name, float value) const;
+    void SetUniform1i(const std::string& name, int value) const;
 
 private:
     unsigned int programId_ {};

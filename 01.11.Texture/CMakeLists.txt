@@ -7,6 +7,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC glad glfw utils)
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_include_directories(${PROJECT_NAME} PUBLIC "${STB_DIR}")
 
 # 复制到二进制文件目录
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

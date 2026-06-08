@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <Color.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 namespace fs = std::filesystem;
 
@@ -73,6 +75,7 @@ void MainWindow::Run()
     // 先准备着色器，再准备顶点数据
     PrepareShader();
     PrepareData();
+    PrepareTexture();
 
     // 主循环：处理事件、清屏、渲染、交换缓冲区
     while (!glfwWindowShouldClose(window_)) {
@@ -99,6 +102,7 @@ void MainWindow::Render()
 {
     // 启用当前着色器程序并绑定 VAO，然后绘制三角形
     shaderPrograms_[0].UseProgram();
+    shaderPrograms_[0].SetUniform1i("sampler", 0);
     glBindVertexArray(vaoIds_[0]);
     // 这里不再是 glDrawArrays，而是 glDrawElements，因为我们使用了索引缓冲对象
     glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
@@ -111,6 +115,12 @@ void MainWindow::PrepareData()
         -0.5f, -0.5f, 0.0f, // 左下
         0.5f, -0.5f, 0.0f, // 右下
         0.0f, 0.5f, 0.0f, // 上
+    };
+    // 为顶点准备uv数据
+    std::vector<float> uvs = {
+        0.0f, 0.0f, // 左下
+        1.0f, 0.0f, // 右下
+        0.5f, 1.0f, // 上
     };
     std::vector<unsigned int> eleIndex = {
         0, 1, 2,
@@ -133,6 +143,12 @@ void MainWindow::PrepareData()
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0); // 解绑顶点vbo，其他vbo做准备，vao仍然保持激活状态
 
+    unsigned int uvVboId = 0;
+    glGenBuffers(1, &uvVboId);
+    glBindBuffer(GL_ARRAY_BUFFER, uvVboId);
+    glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(float), uvs.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
     // 此时没有任何激活的vbo，因此后面每次添加描述的时候都要绑定对应的vbo
 
     // 动态获取location
@@ -142,6 +158,12 @@ void MainWindow::PrepareData()
     glEnableVertexAttribArray(location); // 启用属性 location 0，顶点数据将会放置到0位置
     glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glBindBuffer(GL_ARRAY_BUFFER, 0); // 顶点vbo已经描述完毕，解绑顶点vbo，为其他vbo做准备，vao仍然保持激活状态
+
+    location = shaderPrograms_[0].GetAttrLocation("aUv");
+    glBindBuffer(GL_ARRAY_BUFFER, uvVboId);
+    glEnableVertexAttribArray(location);
+    glVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // vbo以全部描述完毕，vao可以解绑了；解绑VAO，使状态不会意外影响后续操作
     glBindVertexArray(0);
@@ -162,4 +184,32 @@ void MainWindow::PrepareShader()
 
     Shader shader(vertexPath, fragmentPath);
     shaderPrograms_.push_back(shader);
+}
+
+void MainWindow::PrepareTexture()
+{
+    // 读取图片
+    int width = 0;
+    int height = 0;
+    int channels = 0;
+    // 反转y轴，OpenGL的纹理坐标系原点在左下角，而图片的原点在左上角
+    stbi_set_flip_vertically_on_load(true);
+    auto* imgPtr = stbi_load("assets/image/wall.jpg", &width, &height, &channels, STBI_rgb_alpha);
+
+    unsigned int textureId = 0;
+    glGenTextures(1, &textureId);
+
+    glActiveTexture(GL_TEXTURE0); // 如果不激活，默认激活0，gpu至少保证有16个纹理单元
+    glBindTexture(GL_TEXTURE_2D, textureId); // 把纹理绑定到当前激活的纹理单元上
+
+    // 传输图片输入（描述+内容）
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgPtr);
+    // 释放图片内存
+    stbi_image_free(imgPtr);
+    imgPtr = nullptr;
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // 设置纹理环绕方式：水平重复
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // 设置纹理环绕方式：垂直重复
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 设置纹理缩小过滤：线性过滤
+
 }

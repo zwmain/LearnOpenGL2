@@ -29,6 +29,8 @@ private:
     void PrepareData();
     // 创建、编译并链接顶点/片段着色器
     void PrepareShader();
+    // 创建纹理
+    void PrepareTexture();
 
 private:
     GLFWwindow* window_ = nullptr;                    // GLFW 窗口对象指针

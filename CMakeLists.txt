@@ -11,6 +11,8 @@ endif(MSVC)
 
 set(GLFW_LIBRARY_TYPE STATIC)
 
+set(STB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/00.3rd/stb")
+
 add_subdirectory("00.3rd/glad")
 add_subdirectory("00.3rd/glfw")
 
