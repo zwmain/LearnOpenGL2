@@ -112,14 +112,6 @@ void MainWindow::PrepareData()
         0.5f, -0.5f, 0.0f, // 右下
         0.0f, 0.5f, 0.0f, // 上
     };
-    Color c1(210, 79, 75);
-    Color c2(138, 210, 75);
-    Color c3(75, 206, 210);
-    std::vector<float> colors = {
-        c1.R(), c1.G(), c1.B(), // 第一个顶点rgb
-        c2.R(), c2.G(), c2.B(), // 第二个顶点rgb
-        c3.R(), c3.G(), c3.B(), // 第三个顶点rgb
-    };
     std::vector<unsigned int> eleIndex = {
         0, 1, 2,
     };
@@ -139,14 +131,7 @@ void MainWindow::PrepareData()
     glGenBuffers(1, &vertexVboId);
     glBindBuffer(GL_ARRAY_BUFFER, vertexVboId);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // 解绑顶点vbo，为颜色vbo做准备，vao仍然保持激活状态
-
-    unsigned int colorVboId = 0;
-    // 创建另一个 VBO 用于颜色数据，并上传到 GPU
-    glGenBuffers(1, &colorVboId);
-    glBindBuffer(GL_ARRAY_BUFFER, colorVboId);
-    glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(float), colors.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // 解绑颜色vbo，为后续添加描述做准备，vao仍然保持激活状态
+    glBindBuffer(GL_ARRAY_BUFFER, 0); // 解绑顶点vbo，其他vbo做准备，vao仍然保持激活状态
 
     // 此时没有任何激活的vbo，因此后面每次添加描述的时候都要绑定对应的vbo
 
@@ -156,15 +141,7 @@ void MainWindow::PrepareData()
     glBindBuffer(GL_ARRAY_BUFFER, vertexVboId); // 绑定顶点vbo，描述才会生效
     glEnableVertexAttribArray(location); // 启用属性 location 0，顶点数据将会放置到0位置
     glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // 顶点vbo已经描述完毕，解绑顶点vbo，为颜色vbo做准备，vao仍然保持激活状态
-
-    // 动态获取location
-    location = shaderPrograms_[0].GetAttrLocation("aColor");
-    // 告诉 OpenGL 颜色数据的布局：颜色属性在 location 1，3 个 float，紧密排列
-    glBindBuffer(GL_ARRAY_BUFFER, colorVboId); // 绑定颜色vbo，描述才会生效
-    glEnableVertexAttribArray(location); // 启用属性 location 1，颜色数据将会放置到1位置
-    glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // 颜色vbo已经描述完毕，解绑颜色vbo，vao仍然保持激活状态
+    glBindBuffer(GL_ARRAY_BUFFER, 0); // 顶点vbo已经描述完毕，解绑顶点vbo，为其他vbo做准备，vao仍然保持激活状态
 
     // vbo以全部描述完毕，vao可以解绑了；解绑VAO，使状态不会意外影响后续操作
     glBindVertexArray(0);
