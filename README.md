@@ -893,9 +893,203 @@ uv坐标完全由你指定，你想把哪个点定为u0 v0，哪个点定位u1 v
 
 那么采样器就可以拿着每个像素的uv坐标，到纹理对象里面找像素
 
+#### 图片操作API
+
+读取图片，使用stbImage库，地址在 [https://github.com/nothings/stb](https://github.com/nothings/stb)
+
+`stb_image` 是一个非常流行的单头文件库，用于加载多种格式的图片文件（如 PNG, JPG, BMP, TGA 等）。
+
+使用 `git submodule` 将 `stb_image` 添加到 `00.3rd` 目录下：
+```shell
+git submodule add https://github.com/nothings/stb.git 00.3rd/stb
+```
+
+在项目中使用 `stb_image` 时，通常只需要包含头文件并定义宏。
+
+```cpp
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+```
+
+注意：上面的哪个宏必须定义，否则会编译不过
+
+
+1. **加载图片到内存**
+   `stbi_load(const char *filename, int *out_width, int *out_height, int *out_channels, void **out_data)`
+   - `filename`: 图片文件的路径。
+   - `out_width`: 输出的图片宽度。
+   - `out_height`: 输出的图片高度。
+   - `out_channels`: 输出的颜色通道数（通常是 3 或 4）。
+   - `out_data`: 指向图像数据的指针。加载完成后，需要手动使用 `stbi_image_free` 释放内存。
+
+2. **从文件加载图片**
+   `stbi_load_from_file(const char *filename, int *out_width, int *out_height, int *out_channels, int stride, int scale_x, int scale_y, void **out_data)`
+   - 增加了 `stride`（步长）、`scale_x`、`scale_y` 参数，支持更复杂的加载需求。
+
+3. **垂直翻转**
+   `stbi_set_flip_vertically_on_load(bool flip)`
+   - 由于 OpenGL 的纹理坐标系（左下角为原点）与大多数图片格式（左上角为原点）不同，通常需要调用此函数将图像垂直翻转。
+
+4. **释放内存**
+   `stbi_image_free(void *data)`
+   - 释放由 `stbi_load` 分配的内存。
+
+
+关于opengl坐标系和图片坐标系的区别
+
+![opengl图片坐标系](00.assets/01.14.png)
+
+示例代码
+
+```cpp
+int width, height, channels;
+unsigned char *data = stbi_load("assets/image.png", &width, &height, &channels, 0);
+if (data) {
+    // 使用数据进行操作...
+    stbi_image_free(data);
+}
+```
+
 #### 纹理操作API
 
-读取图片
+纹理单元 (Texture Unit)
 
-todo
+纹理单元是 GPU 上的一个硬件槽位，用于将纹理对象（Texture）与采样器（Sampler）关联起来。
 
+在 OpenGL 中，着色器中的 `sampler2D`（或其他采样器类型）并不直接指向具体的纹理对象，而是指向一个**纹理单元**。这意味着你可以动态地在不同的纹理单元中切换不同的纹理，而无需重新编译着色器。
+
+核心概念：
+
+- **绑定过程**：首先通过 `glActiveTexture(GL_TEXTURE0 + i)` 激活特定的纹理单元（i 为单元编号）。
+- **关联对象**：然后调用 `glBindTexture(GL_TEXTURE_2D, textureId)`。此时，该纹理对象就被绑定到了当前的活跃纹理单元上。
+- **采样过程**：在 GLSL 中，采样器变量（如 `uniform sampler2D myTexture;`）的值实际上就是纹理单元的编号（如 0, 1, 2...）。
+
+示例代码：
+
+```cpp
+// 激活 0 号纹理单元并绑定纹理
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, textureId1);
+
+// 激活 1 号纹理单元并绑定另一个纹理
+glActiveTexture(GL_TEXTURE1);
+glBindTexture(GL_TEXTURE_2D, textureId2);
+```
+
+![纹理单元](00.assets/01.15.png)
+
+纹理对象操作接口
+
+纹理对象（Texture Object）是 GPU 端用于存储纹理数据和相关属性的对象。
+
+
+```cpp
+void glGenTextures(GLsizei n, GLuint* textures);
+void glBindTexture(GLenum target, GLuint texture);
+```
+
+- n: 创建多少个纹理
+- textures: 创建出来的纹理 ID 列表的首地址
+- target: 纹理的目标类型（如 `GL_TEXTURE_2D`）
+- texture: 纹理的 ID
+
+例如：
+
+```cpp
+unsigned int texture;
+glGenTextures(1, &texture);
+glBindTexture(GL_TEXTURE_2D, texture);
+```
+
+![纹理对象](00.assets/01.16.png)
+
+传输纹理数据
+
+将数据从内存（CPU端）传输到显存（GPU端）最常用的接口是 `glTexImage2D`。
+
+```cpp
+void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void * data);
+```
+
+- `target`: 纹理目标（如 `GL_TEXTURE_2D`）
+- `level`: 纹理Mipmap层级（通常为 0）
+- `internalFormat`: GPU内部存储格式（如 `GL_RGB`, `GL_RGBA`）
+- `width`: 纹理宽度
+- `height`: 纹理高度
+- `border`: 边框宽度（通常为 0）
+- `format`: 数据格式（如 `GL_RGB`, `GL_RGBA`）
+- `type`: 数据类型（如 `GL_UNSIGNED_BYTE`）
+- `data`: 指向图像数据的指针
+
+此外，我们还需要设置纹理的过滤和混合参数，使用 `glTexParameteri`：
+
+```cpp
+void glTexParameteri(GLenum target, GLenum parameter, GLint value);
+```
+
+- `parameter`: 想要设置的参数。常用的包括：
+  - `GL_TEXTURE_MIN_FILTER`: 最小化过滤（如 `GL_LINEAR`, `GL_NEAREST`）
+  - `GL_TEXTURE_MAG_FILTER`: 最大化过滤
+  - `GL_TEXTURE_WRAP_S`: S方向（水平）的重复模式（如 `GL_REPEAT`, `GL_CLAMP_TO_EDGE`）
+  - `GL_TEXTURE_WRAP_T`: T方向（垂直）的重复模式
+
+示例：
+
+```cpp
+glBindTexture(GL_TEXTURE_2D, texture);
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+```
+
+![传输纹理](00.assets/01.17.png)
+
+总结
+
+准备一个纹理对象的流程如下示例：
+
+```c++
+void MainWindow::PrepareTexture()
+{
+    // 读取图片
+    int width = 0;
+    int height = 0;
+    int channels = 0;
+    // 反转y轴，OpenGL的纹理坐标系原点在左下角，而图片的原点在左上角
+    stbi_set_flip_vertically_on_load(true);
+    auto* imgPtr = stbi_load("assets/image/wall.jpg", &width, &height, &channels, STBI_rgb_alpha);
+
+    unsigned int textureId = 0;
+    glGenTextures(1, &textureId);
+
+    glActiveTexture(GL_TEXTURE0); // 如果不激活，默认激活0，gpu至少保证有16个纹理单元
+    glBindTexture(GL_TEXTURE_2D, textureId); // 把纹理绑定到当前激活的纹理单元上
+
+    // 传输图片输入（描述+内容）
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgPtr);
+    // 释放图片内存
+    stbi_image_free(imgPtr);
+    imgPtr = nullptr;
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // 设置纹理环绕方式：水平重复
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // 设置纹理环绕方式：垂直重复
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 设置纹理缩小过滤：线性过滤
+
+}
+```
+
+![纹理接口总结](00.assets/01.18.png)
+
+到目前位置，我们一直在讲纹理本身，UV坐标去哪里了？
+
+UV坐标是顶点属性，需要像设置位置和颜色那样，给顶点设置UV坐标
+
+UV坐标完全是由你指定的，你想设置多少就设置多少
+
+并不是要把图形边缘正好和图片边缘对齐
+
+你可以把UV坐标定义的很小，也可以把UV坐标定义的很大，来让纹理只显示一部分或者完全在图形内部显示
+
+代码可以参考 [01.11.Texture](01.11.Texture/)
