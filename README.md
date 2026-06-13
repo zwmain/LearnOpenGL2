@@ -1102,4 +1102,4 @@ UV坐标完全是由你指定的，你想设置多少就设置多少
 
 通过动态改变uv值，实现轮播图效果 [01.14.Texture-dynamic](01.14.Texture-dynamic/)
 
-
+封装纹理类 [01.15.Texture-dynamic-utils](01.15.Texture-dynamic-utils/)
