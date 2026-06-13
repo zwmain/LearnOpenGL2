@@ -1253,3 +1253,7 @@ log计算出来的是浮点，还要转换为整数，才能给opengl使用
 ![mipmap判定](00.assets/01.25.png)
 
 最后，上面知识讲解了原理，实际使用中完全不需要手写，只要在c++中生成了mipmap，然后采样设置为`GL_LINEAR_MIPMAP_LINEAR`。opengl会自动使用mipmap
+
+## 02.进入3D
+
+[进入3D](docs/02.3D.md)
