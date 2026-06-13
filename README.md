@@ -1093,3 +1093,13 @@ UV坐标完全是由你指定的，你想设置多少就设置多少
 你可以把UV坐标定义的很小，也可以把UV坐标定义的很大，来让纹理只显示一部分或者完全在图形内部显示
 
 代码可以参考 [01.11.Texture](01.11.Texture/)
+
+#### 纹理示例
+
+给一个矩形贴图 [01.12.Texture-rect](01.12.Texture-rect/)
+
+尝试不同的包裹方式 [01.13.Texture-wrap](01.13.Texture-wrap/)
+
+通过动态改变uv值，实现轮播图效果 [01.14.Texture-dynamic](01.14.Texture-dynamic/)
+
+
