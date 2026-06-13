@@ -123,3 +123,9 @@ void Shader::SetUniform1f(const std::string& name, float value) const
     int location = glGetUniformLocation(programId_, name.c_str());
     glUniform1f(location, value);
 }
+
+void Shader::SetUniform1i(const std::string& name, int value) const
+{
+    int location = glGetUniformLocation(programId_, name.c_str());
+    glUniform1i(location, value);
+}

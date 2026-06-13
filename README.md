@@ -828,3 +828,428 @@ glUniform1f(location, value);
 glUniform1f(); //对应uniform float xxx;
 glUniform3f(); //对应uniform vec3 xxx;
 ```
+
+### 纹理
+
+在之前的绘制中，我们可以给每个顶点设置颜色，控制顶点的颜色，顶点之间则是通过**插值**自动计算颜色
+
+实际模型里的颜色可能非常丰富，这不是给几个顶点配置颜色，然后gpu自动插值能做到的
+
+但是我们不可能使用与像素数量一致的顶点去绘制图形，因为每个模型都会需求更多的顶点，每个顶点又需求一个颜色属性。
+
+于是，开发者们就想到，可以用现有的图片给贴到图形上，这个图片就叫做**纹理**（Texture）。
+
+图片可以做的非常精细，即使只有少数顶点，也可以绘制丰富的图形颜色和细节。
+
+比如LearnOpengl上的，给三角形贴上一张砖墙的示例：
+
+![三角形砖墙](00.assets/01.11.png)
+
+就像示例里面那样，只有三个顶点，但是图形内部的颜色细节很丰富。
+
+此时有个疑问，图片都是矩形的，怎么把矩形的图片贴到三角形的图形上呢？
+
+他们大小不同，形状不同，坐标系都不一样，该怎么处理呢？
+
+这是我们就需要引入UV坐标
+
+#### UV坐标
+
+先不看UV坐标的定义，先想一想为什么要引入UV坐标呢？还有前面的问题该怎么解决呢？
+
+给一个200x250的图形，再给一个200x250的图片，二者大小一致，此时将图片贴到图形上，只需一个一个像素一对一贴过去就可以了
+
+现在图片不变，图形变为了300x250，无法一一对应了，该怎么办。
+
+我们可以尝试将**像素对应**改为**比例对应**，可以允许重复一些像素
+
+以前：使用图片第x行，第y行的像素
+
+现在：使用图片横向u%，纵向v%位置的像素
+
+![uv坐标](00.assets/01.12.png)
+
+可以类比opengl的NDC坐标，把现实世界映射到了[-1, 1]区间。uv坐标也是一样，将图形和图片各自映射到了[0, 1]区间
+
+现在知道了uv坐标的含义，该怎么用呢
+
+uv坐标完全由你指定，你想把哪个点定为u0 v0，哪个点定位u1 v1都可以
+
+如果简单一点的话，以三角形为例，找到它的包络矩形，将最左下角定义为u0v0，最右上角定义为u1v1
+
+你还可以将包络矩形的中间定义为u1v1，那么这个三角形就可能会超过u1v1，这是允许的，此时我们就需要规定超过u1v1范围后的行为。后面再说
+
+对于图片来说，本身就是矩形，那么最左下角就是u0v0，最右上角就是u1v1
+
+#### 纹理与采样
+
+纹理对象（Texture）：在GPU端，用来以一定格式存放纹理图片描述信息与数据信息的对象
+
+采样器（Sampler）：在GPU端，用来根据UV坐标，以一定算法，从纹理图片中获取颜色的过程为采样，执行采样对象成为采样器
+
+![纹理与采样](00.assets/01.13.png)
+
+我们在定义了各个顶点的uv坐标后，然后经历了光栅化，此时每个像素都有了自己的uv坐标，跟颜色一样，中间像素的uv坐标也是顶点插值出来的
+
+那么采样器就可以拿着每个像素的uv坐标，到纹理对象里面找像素
+
+#### 图片操作API
+
+读取图片，使用stbImage库，地址在 [https://github.com/nothings/stb](https://github.com/nothings/stb)
+
+`stb_image` 是一个非常流行的单头文件库，用于加载多种格式的图片文件（如 PNG, JPG, BMP, TGA 等）。
+
+使用 `git submodule` 将 `stb_image` 添加到 `00.3rd` 目录下：
+```shell
+git submodule add https://github.com/nothings/stb.git 00.3rd/stb
+```
+
+在项目中使用 `stb_image` 时，通常只需要包含头文件并定义宏。
+
+```cpp
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+```
+
+注意：上面的哪个宏必须定义，否则会编译不过
+
+
+1. **加载图片到内存**
+   `stbi_load(const char *filename, int *out_width, int *out_height, int *out_channels, void **out_data)`
+   - `filename`: 图片文件的路径。
+   - `out_width`: 输出的图片宽度。
+   - `out_height`: 输出的图片高度。
+   - `out_channels`: 输出的颜色通道数（通常是 3 或 4）。
+   - `out_data`: 指向图像数据的指针。加载完成后，需要手动使用 `stbi_image_free` 释放内存。
+
+2. **从文件加载图片**
+   `stbi_load_from_file(const char *filename, int *out_width, int *out_height, int *out_channels, int stride, int scale_x, int scale_y, void **out_data)`
+   - 增加了 `stride`（步长）、`scale_x`、`scale_y` 参数，支持更复杂的加载需求。
+
+3. **垂直翻转**
+   `stbi_set_flip_vertically_on_load(bool flip)`
+   - 由于 OpenGL 的纹理坐标系（左下角为原点）与大多数图片格式（左上角为原点）不同，通常需要调用此函数将图像垂直翻转。
+
+4. **释放内存**
+   `stbi_image_free(void *data)`
+   - 释放由 `stbi_load` 分配的内存。
+
+
+关于opengl坐标系和图片坐标系的区别
+
+![opengl图片坐标系](00.assets/01.14.png)
+
+示例代码
+
+```cpp
+int width, height, channels;
+unsigned char *data = stbi_load("assets/image.png", &width, &height, &channels, 0);
+if (data) {
+    // 使用数据进行操作...
+    stbi_image_free(data);
+}
+```
+
+#### 纹理操作API
+
+纹理单元 (Texture Unit)
+
+纹理单元是 GPU 上的一个硬件槽位，用于将纹理对象（Texture）与采样器（Sampler）关联起来。
+
+在 OpenGL 中，着色器中的 `sampler2D`（或其他采样器类型）并不直接指向具体的纹理对象，而是指向一个**纹理单元**。这意味着你可以动态地在不同的纹理单元中切换不同的纹理，而无需重新编译着色器。
+
+核心概念：
+
+- **绑定过程**：首先通过 `glActiveTexture(GL_TEXTURE0 + i)` 激活特定的纹理单元（i 为单元编号）。
+- **关联对象**：然后调用 `glBindTexture(GL_TEXTURE_2D, textureId)`。此时，该纹理对象就被绑定到了当前的活跃纹理单元上。
+- **采样过程**：在 GLSL 中，采样器变量（如 `uniform sampler2D myTexture;`）的值实际上就是纹理单元的编号（如 0, 1, 2...）。
+
+示例代码：
+
+```cpp
+// 激活 0 号纹理单元并绑定纹理
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, textureId1);
+
+// 激活 1 号纹理单元并绑定另一个纹理
+glActiveTexture(GL_TEXTURE1);
+glBindTexture(GL_TEXTURE_2D, textureId2);
+```
+
+![纹理单元](00.assets/01.15.png)
+
+纹理对象操作接口
+
+纹理对象（Texture Object）是 GPU 端用于存储纹理数据和相关属性的对象。
+
+
+```cpp
+void glGenTextures(GLsizei n, GLuint* textures);
+void glBindTexture(GLenum target, GLuint texture);
+```
+
+- n: 创建多少个纹理
+- textures: 创建出来的纹理 ID 列表的首地址
+- target: 纹理的目标类型（如 `GL_TEXTURE_2D`）
+- texture: 纹理的 ID
+
+例如：
+
+```cpp
+unsigned int texture;
+glGenTextures(1, &texture);
+glBindTexture(GL_TEXTURE_2D, texture);
+```
+
+![纹理对象](00.assets/01.16.png)
+
+传输纹理数据
+
+将数据从内存（CPU端）传输到显存（GPU端）最常用的接口是 `glTexImage2D`。
+
+```cpp
+void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void * data);
+```
+
+- `target`: 纹理目标（如 `GL_TEXTURE_2D`）
+- `level`: 纹理Mipmap层级（通常为 0）
+- `internalFormat`: GPU内部存储格式（如 `GL_RGB`, `GL_RGBA`）
+- `width`: 纹理宽度
+- `height`: 纹理高度
+- `border`: 边框宽度（通常为 0）
+- `format`: 数据格式（如 `GL_RGB`, `GL_RGBA`）
+- `type`: 数据类型（如 `GL_UNSIGNED_BYTE`）
+- `data`: 指向图像数据的指针
+
+此外，我们还需要设置纹理的过滤和混合参数，使用 `glTexParameteri`：
+
+```cpp
+void glTexParameteri(GLenum target, GLenum parameter, GLint value);
+```
+
+- `parameter`: 想要设置的参数。常用的包括：
+  - `GL_TEXTURE_MIN_FILTER`: 最小化过滤（如 `GL_LINEAR`, `GL_NEAREST`）
+  - `GL_TEXTURE_MAG_FILTER`: 最大化过滤
+  - `GL_TEXTURE_WRAP_S`: S方向（水平）的重复模式（如 `GL_REPEAT`, `GL_CLAMP_TO_EDGE`）
+  - `GL_TEXTURE_WRAP_T`: T方向（垂直）的重复模式
+
+示例：
+
+```cpp
+glBindTexture(GL_TEXTURE_2D, texture);
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+```
+
+![传输纹理](00.assets/01.17.png)
+
+总结
+
+准备一个纹理对象的流程如下示例：
+
+```c++
+void MainWindow::PrepareTexture()
+{
+    // 读取图片
+    int width = 0;
+    int height = 0;
+    int channels = 0;
+    // 反转y轴，OpenGL的纹理坐标系原点在左下角，而图片的原点在左上角
+    stbi_set_flip_vertically_on_load(true);
+    auto* imgPtr = stbi_load("assets/image/wall.jpg", &width, &height, &channels, STBI_rgb_alpha);
+
+    unsigned int textureId = 0;
+    glGenTextures(1, &textureId);
+
+    glActiveTexture(GL_TEXTURE0); // 如果不激活，默认激活0，gpu至少保证有16个纹理单元
+    glBindTexture(GL_TEXTURE_2D, textureId); // 把纹理绑定到当前激活的纹理单元上
+
+    // 传输图片输入（描述+内容）
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgPtr);
+    // 释放图片内存
+    stbi_image_free(imgPtr);
+    imgPtr = nullptr;
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // 设置纹理环绕方式：水平重复
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // 设置纹理环绕方式：垂直重复
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // 设置纹理缩小过滤：线性过滤
+
+}
+```
+
+![纹理接口总结](00.assets/01.18.png)
+
+到目前位置，我们一直在讲纹理本身，UV坐标去哪里了？
+
+UV坐标是顶点属性，需要像设置位置和颜色那样，给顶点设置UV坐标
+
+UV坐标完全是由你指定的，你想设置多少就设置多少
+
+并不是要把图形边缘正好和图片边缘对齐
+
+你可以把UV坐标定义的很小，也可以把UV坐标定义的很大，来让纹理只显示一部分或者完全在图形内部显示
+
+代码可以参考 [01.11.Texture](01.11.Texture/)
+
+#### 纹理示例
+
+给一个矩形贴图 [01.12.Texture-rect](01.12.Texture-rect/)
+
+尝试不同的包裹方式 [01.13.Texture-wrap](01.13.Texture-wrap/)
+
+通过动态改变uv值，实现轮播图效果 [01.14.Texture-dynamic](01.14.Texture-dynamic/)
+
+封装纹理类 [01.15.Texture-dynamic-utils](01.15.Texture-dynamic-utils/)
+
+#### 纹理混合
+
+现在有一张草地图片
+
+![草地](01.16.Texture-mix/assets/image/grass.jpeg)
+
+还有一张土地图片
+
+![土地](01.16.Texture-mix/assets/image/land.jpeg)
+
+我们想要做出一个比较真实的地面效果
+
+![地面](00.assets/01.19.png)
+
+我们需要创建2个纹理，分别放到两个纹理单元中
+
+```c++
+texture_.LoadFromFile("assets/image/grass.jpeg", 0);
+texture2_.LoadFromFile("assets/image/land.jpeg", 1);
+```
+
+glsl也需要采样两个纹理
+
+```glsl
+#version 460 core
+out vec4 FragColor;
+
+in vec2 uv;
+
+uniform sampler2D grassSampler;
+uniform sampler2D landSampler;
+
+void main()
+{
+    float weight = 0.5;
+    vec4 grassColor = texture(grassSampler, uv);
+    vec4 landColor = texture(landSampler, uv);
+    FragColor = grassColor * weight + landColor * (1 - 0.5);
+}
+
+```
+
+然后我们就得到了处处均匀混合的图片
+
+![地面](00.assets/01.20.png)
+
+非常假，因为草地都是有的地方多，有的地方少的，不可能那么均匀的
+
+因此我们就需要一个**权重图**，也叫噪声图
+
+![噪声图](01.16.Texture-mix/assets/image/noise.jpeg)
+
+颜色明暗就代表那个位置的权重，白色是最大，黑色最小
+
+因此我们就需要再创建一个纹理，然后glsl做修改
+
+```glsl
+#version 460 core
+out vec4 FragColor;
+
+in vec2 uv;
+
+uniform sampler2D grassSampler;
+uniform sampler2D landSampler;
+uniform sampler2D noiseSampler;
+
+void main()
+{
+    vec4 grassColor = texture(grassSampler, uv);
+    vec4 landColor = texture(landSampler, uv);
+    vec4 noiseColor = texture(noiseSampler, uv);
+    FragColor = grassColor * (1 - noiseColor.r) + landColor * noiseColor.r;
+}
+```
+
+关键就在这一步
+
+```glsl
+FragColor = grassColor * (1 - noiseColor.r) + landColor * noiseColor.r;
+```
+
+噪声图可以是灰度图，三个通道的值都是一样的，可以取任意通道作为权重
+
+上面的代码等价于下面代码， opengl给我们提供了混合函数，在这个函数中，权重是后面一个参数的权重
+
+```glsl
+FragColor = mix(grassColor, landColor, noiseColor.r)
+```
+
+### Mipmap
+
+Mipmap是什么
+
+Mipmap 是指一系列不同分辨率的纹理图像。对于一张基础纹理，Mipmap 会生成一系列尺寸逐渐减小的图像，通常是每一级都缩小为前一级的一半（例如 512x512, 256x256, 128x128... 直到 1x1）。
+
+Mipmap的作用是什么，是为解决什么问题出现的
+
+Mipmap 主要解决两个问题：
+
+1. **降低采样引起的“闪烁”和“噪点”（Aliasing）：** 当物体距离摄像机非常远时，一个像素可能对应纹理上的很多个像素。如果只采样其中一个，会导致图像出现明显的闪烁和锯齿。Mipmap 通过使用更低分辨率的图像，让采样点在视觉上更平滑。
+2. **提高性能（缓存命中率）：** 由于远处的物体只需要低分辨率的纹理数据。通过使用 Mipmap，GPU 可以从更小的纹理块中获取数据，从而提高纹理缓存（Texture Cache）的命中率。
+
+Mipmap如何使用
+
+在 OpenGL 中，使用 Mipmap 主要涉及以下两步：
+
+1. **生成 Mipmap：** 使用 `glGenerateMipmap(GL_TEXTURE_2D)`。这会自动为绑定的纹理生成所有层级的 Mipmap。只要调用了这个函数，就说明启用了Mipmap
+2. **设置过滤参数：** 使用 `glTexParameteri` 设置最小化过滤（`GL_TEXTURE_MIN_FILTER`）。
+   - 必须使用支持 Mipmap 的过滤模式，如 `GL_LINEAR_MIPMAP_LINEAR`（线性Mipmap过滤）或 `GL_NEAREST_MIPMAP_NEAREST`（最近Mipmap过滤）。
+   - 注意：最大化过滤（`GL_TEXTURE_MAG_FILTER`）不需要 Mipmap，通常保持 `GL_LINEAR` 即可。
+3. **fragment glsl** 和普通纹理使用方法一致，`texture(sampler, uv)`，内部已经自动做好了
+
+封装纹理类 [01.15.Texture-dynamic-utils](01.15.Texture-dynamic-utils/) 中，纹理类就已经使用了mipmap
+
+#### Mipmap的生成原理
+
+原理还是挺复杂的
+
+大图片长宽每次砍半，先模糊，再线性插值采样，逐渐生成小图片
+
+#### Mipmap切换原理
+
+用glsl内置函数求出uv坐标分别在x,y方向的变化量
+
+![dxdy](00.assets/01.21.png)
+
+知道变化量之后，变化量越大，就说明图片相对于原图越小
+
+![dfdx](00.assets/01.22.png)
+
+然后就可以用 `log2(max(dx, dy))` 获取mipmap级别
+
+计算过程如下
+
+![mipmap级别](00.assets/01.23.png)
+
+这里之所以用点乘，是因为图像有可能是斜着的，也就是说，x,y同时存在变化
+
+log计算出来的是浮点，还要转换为整数，才能给opengl使用
+
+![mipmap判定](00.assets/01.24.png)
+
+通过`textureLod(sampler, uv, level)`传入level值
+
+整体mipmap级别判定的流程如下
+
+![mipmap判定](00.assets/01.25.png)
+
+最后，上面知识讲解了原理，实际使用中完全不需要手写，只要在c++中生成了mipmap，然后采样设置为`GL_LINEAR_MIPMAP_LINEAR`。opengl会自动使用mipmap

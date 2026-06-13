@@ -11,6 +11,8 @@ endif(MSVC)
 
 set(GLFW_LIBRARY_TYPE STATIC)
 
+set(STB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/00.3rd/stb")
+
 add_subdirectory("00.3rd/glad")
 add_subdirectory("00.3rd/glfw")
 
@@ -26,3 +28,9 @@ add_subdirectory("01.07.Rect-ebo")
 add_subdirectory("01.08.Rect-use-utils")
 add_subdirectory("01.09.Rect-glsl")
 add_subdirectory("01.10.Rect-uniform")
+add_subdirectory("01.11.Texture")
+add_subdirectory("01.12.Texture-rect")
+add_subdirectory("01.13.Texture-wrap")
+add_subdirectory("01.14.Texture-dynamic")
+add_subdirectory("01.15.Texture-dynamic-utils")
+add_subdirectory("01.16.Texture-mix")
