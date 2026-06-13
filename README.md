@@ -1217,3 +1217,39 @@ Mipmap如何使用
 3. **fragment glsl** 和普通纹理使用方法一致，`texture(sampler, uv)`，内部已经自动做好了
 
 封装纹理类 [01.15.Texture-dynamic-utils](01.15.Texture-dynamic-utils/) 中，纹理类就已经使用了mipmap
+
+#### Mipmap的生成原理
+
+原理还是挺复杂的
+
+大图片长宽每次砍半，先模糊，再线性插值采样，逐渐生成小图片
+
+#### Mipmap切换原理
+
+用glsl内置函数求出uv坐标分别在x,y方向的变化量
+
+![dxdy](00.assets/01.21.png)
+
+知道变化量之后，变化量越大，就说明图片相对于原图越小
+
+![dfdx](00.assets/01.22.png)
+
+然后就可以用 `log2(max(dx, dy))` 获取mipmap级别
+
+计算过程如下
+
+![mipmap级别](00.assets/01.23.png)
+
+这里之所以用点乘，是因为图像有可能是斜着的，也就是说，x,y同时存在变化
+
+log计算出来的是浮点，还要转换为整数，才能给opengl使用
+
+![mipmap判定](00.assets/01.24.png)
+
+通过`textureLod(sampler, uv, level)`传入level值
+
+整体mipmap级别判定的流程如下
+
+![mipmap判定](00.assets/01.25.png)
+
+最后，上面知识讲解了原理，实际使用中完全不需要手写，只要在c++中生成了mipmap，然后采样设置为`GL_LINEAR_MIPMAP_LINEAR`。opengl会自动使用mipmap
