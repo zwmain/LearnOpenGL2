@@ -33,4 +33,4 @@ add_subdirectory("01.12.Texture-rect")
 add_subdirectory("01.13.Texture-wrap")
 add_subdirectory("01.14.Texture-dynamic")
 add_subdirectory("01.15.Texture-dynamic-utils")
-
+add_subdirectory("01.16.Texture-mix")

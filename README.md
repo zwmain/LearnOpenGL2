@@ -1103,3 +1103,117 @@ UV坐标完全是由你指定的，你想设置多少就设置多少
 通过动态改变uv值，实现轮播图效果 [01.14.Texture-dynamic](01.14.Texture-dynamic/)
 
 封装纹理类 [01.15.Texture-dynamic-utils](01.15.Texture-dynamic-utils/)
+
+#### 纹理混合
+
+现在有一张草地图片
+
+![草地](01.16.Texture-mix/assets/image/grass.jpeg)
+
+还有一张土地图片
+
+![土地](01.16.Texture-mix/assets/image/land.jpeg)
+
+我们想要做出一个比较真实的地面效果
+
+![地面](00.assets/01.19.png)
+
+我们需要创建2个纹理，分别放到两个纹理单元中
+
+```c++
+texture_.LoadFromFile("assets/image/grass.jpeg", 0);
+texture2_.LoadFromFile("assets/image/land.jpeg", 1);
+```
+
+glsl也需要采样两个纹理
+
+```glsl
+#version 460 core
+out vec4 FragColor;
+
+in vec2 uv;
+
+uniform sampler2D grassSampler;
+uniform sampler2D landSampler;
+
+void main()
+{
+    float weight = 0.5;
+    vec4 grassColor = texture(grassSampler, uv);
+    vec4 landColor = texture(landSampler, uv);
+    FragColor = grassColor * weight + landColor * (1 - 0.5);
+}
+
+```
+
+然后我们就得到了处处均匀混合的图片
+
+![地面](00.assets/01.20.png)
+
+非常假，因为草地都是有的地方多，有的地方少的，不可能那么均匀的
+
+因此我们就需要一个**权重图**，也叫噪声图
+
+![噪声图](01.16.Texture-mix/assets/image/noise.jpeg)
+
+颜色明暗就代表那个位置的权重，白色是最大，黑色最小
+
+因此我们就需要再创建一个纹理，然后glsl做修改
+
+```glsl
+#version 460 core
+out vec4 FragColor;
+
+in vec2 uv;
+
+uniform sampler2D grassSampler;
+uniform sampler2D landSampler;
+uniform sampler2D noiseSampler;
+
+void main()
+{
+    vec4 grassColor = texture(grassSampler, uv);
+    vec4 landColor = texture(landSampler, uv);
+    vec4 noiseColor = texture(noiseSampler, uv);
+    FragColor = grassColor * (1 - noiseColor.r) + landColor * noiseColor.r;
+}
+```
+
+关键就在这一步
+
+```glsl
+FragColor = grassColor * (1 - noiseColor.r) + landColor * noiseColor.r;
+```
+
+噪声图可以是灰度图，三个通道的值都是一样的，可以取任意通道作为权重
+
+上面的代码等价于下面代码， opengl给我们提供了混合函数，在这个函数中，权重是后面一个参数的权重
+
+```glsl
+FragColor = mix(grassColor, landColor, noiseColor.r)
+```
+
+### Mipmap
+
+Mipmap是什么
+
+Mipmap 是指一系列不同分辨率的纹理图像。对于一张基础纹理，Mipmap 会生成一系列尺寸逐渐减小的图像，通常是每一级都缩小为前一级的一半（例如 512x512, 256x256, 128x128... 直到 1x1）。
+
+Mipmap的作用是什么，是为解决什么问题出现的
+
+Mipmap 主要解决两个问题：
+
+1. **降低采样引起的“闪烁”和“噪点”（Aliasing）：** 当物体距离摄像机非常远时，一个像素可能对应纹理上的很多个像素。如果只采样其中一个，会导致图像出现明显的闪烁和锯齿。Mipmap 通过使用更低分辨率的图像，让采样点在视觉上更平滑。
+2. **提高性能（缓存命中率）：** 由于远处的物体只需要低分辨率的纹理数据。通过使用 Mipmap，GPU 可以从更小的纹理块中获取数据，从而提高纹理缓存（Texture Cache）的命中率。
+
+Mipmap如何使用
+
+在 OpenGL 中，使用 Mipmap 主要涉及以下两步：
+
+1. **生成 Mipmap：** 使用 `glGenerateMipmap(GL_TEXTURE_2D)`。这会自动为绑定的纹理生成所有层级的 Mipmap。只要调用了这个函数，就说明启用了Mipmap
+2. **设置过滤参数：** 使用 `glTexParameteri` 设置最小化过滤（`GL_TEXTURE_MIN_FILTER`）。
+   - 必须使用支持 Mipmap 的过滤模式，如 `GL_LINEAR_MIPMAP_LINEAR`（线性Mipmap过滤）或 `GL_NEAREST_MIPMAP_NEAREST`（最近Mipmap过滤）。
+   - 注意：最大化过滤（`GL_TEXTURE_MAG_FILTER`）不需要 Mipmap，通常保持 `GL_LINEAR` 即可。
+3. **fragment glsl** 和普通纹理使用方法一致，`texture(sampler, uv)`，内部已经自动做好了
+
+封装纹理类 [01.15.Texture-dynamic-utils](01.15.Texture-dynamic-utils/) 中，纹理类就已经使用了mipmap
