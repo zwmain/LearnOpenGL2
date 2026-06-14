@@ -15,6 +15,7 @@ set(STB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/00.3rd/stb")
 
 add_subdirectory("00.3rd/glad")
 add_subdirectory("00.3rd/glfw")
+add_subdirectory("00.3rd/glm")
 
 add_subdirectory("00.utils")
 
@@ -34,3 +35,5 @@ add_subdirectory("01.13.Texture-wrap")
 add_subdirectory("01.14.Texture-dynamic")
 add_subdirectory("01.15.Texture-dynamic-utils")
 add_subdirectory("01.16.Texture-mix")
+
+add_subdirectory("02.01.3D-transform")
