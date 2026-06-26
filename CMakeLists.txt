@@ -37,3 +37,4 @@ add_subdirectory("01.15.Texture-dynamic-utils")
 add_subdirectory("01.16.Texture-mix")
 
 add_subdirectory("02.01.3D-transform")
+add_subdirectory("02.02.3D-rect")
