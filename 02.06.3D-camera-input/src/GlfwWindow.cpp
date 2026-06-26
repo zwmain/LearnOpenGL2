@@ -52,6 +52,17 @@ MainWindow::MainWindow(const char* title, int width, int height)
     // 注册默认的 Ctrl+P 快捷键处理器（在初始化阶段注册）
     RegisterKeyHandler(GLFW_KEY_P, GLFW_MOD_CONTROL,
         std::bind(&MainWindow::OnCtrlP, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+    RegisterKeyHandler(GLFW_KEY_R, GLFW_MOD_CONTROL,
+        std::bind(&MainWindow::OnCtrlR, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    RegisterKeyHandler(GLFW_KEY_W, 0,
+        std::bind(&MainWindow::OnW, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    RegisterKeyHandler(GLFW_KEY_A, 0,
+        std::bind(&MainWindow::OnA, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    RegisterKeyHandler(GLFW_KEY_S, 0,
+        std::bind(&MainWindow::OnS, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    RegisterKeyHandler(GLFW_KEY_D, 0,
+        std::bind(&MainWindow::OnD, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
 MainWindow::~MainWindow()
@@ -134,7 +145,7 @@ void MainWindow::Render()
     float radius = 10.0f;
     float camX = sin(glfwGetTime()) * radius;
     float camZ = cos(glfwGetTime()) * radius;
-    glm::mat4 view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+    glm::mat4 view = glm::lookAt(cameraPos_, cameraPos_ + cameraFront_, cameraUp_);
 
     // 创建投影矩阵
     glm::mat4 projection = glm::mat4(1.0f);
@@ -333,5 +344,40 @@ void MainWindow::OnCtrlP(int key, int action, int mods)
     if (action == GLFW_PRESS) {
         isPerspective_ = !isPerspective_;
         std::cout << "Projection mode switched to: " << (isPerspective_ ? "Perspective" : "Orthographic") << std::endl;
+    }
+}
+
+void MainWindow::OnCtrlR(int key, int action, int mods)
+{
+    cameraPos_ = { 0.0f, 0.0f, 3.0f };
+    cameraFront_ = { 0.0f, 0.0f, -1.0f };
+    cameraUp_ = { 0.0f, 1.0f, 0.0f };
+}
+
+void MainWindow::OnW(int key, int action, int mods)
+{
+    if (action == GLFW_PRESS) {
+        cameraPos_ += cameraSpeed_ * cameraFront_;
+    }
+}
+
+void MainWindow::OnA(int key, int action, int mods)
+{
+    if (action == GLFW_PRESS) {
+        cameraPos_ -= glm::normalize(glm::cross(cameraFront_, cameraUp_)) * cameraSpeed_;
+    }
+}
+
+void MainWindow::OnS(int key, int action, int mods)
+{
+    if (action == GLFW_PRESS) {
+        cameraPos_ -= cameraSpeed_ * cameraFront_;
+    }
+}
+
+void MainWindow::OnD(int key, int action, int mods)
+{
+    if (action == GLFW_PRESS) {
+        cameraPos_ += glm::normalize(glm::cross(cameraFront_, cameraUp_)) * cameraSpeed_;
     }
 }

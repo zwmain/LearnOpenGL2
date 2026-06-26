@@ -8,6 +8,7 @@
 #include <Texture.h>
 #include <functional>
 #include <unordered_map>
+#include <glm/glm.hpp>
 
 // MainWindow 封装了 GLFW 窗口创建、输入处理和基本 OpenGL 渲染流程
 class MainWindow {
@@ -41,15 +42,24 @@ private:
     void PrepareTexture();
 
     void OnCtrlP(int key, int action, int mods);
+    void OnCtrlR(int key, int action, int mods);
+    void OnW(int key, int action, int mods);
+    void OnA(int key, int action, int mods);
+    void OnS(int key, int action, int mods);
+    void OnD(int key, int action, int mods);
 
 private:
-    GLFWwindow* window_ = nullptr;                    // GLFW 窗口对象指针
+    GLFWwindow* window_ = nullptr; // GLFW 窗口对象指针
     int width_ = 800; // 窗口宽度
     int height_ = 600; // 窗口高度
     bool isPerspective_ = true; // 是否使用透视投影
-    std::vector<unsigned int> vaoIds_;                // 存储创建的 VAO ID
-    std::vector<Shader> shaderPrograms_;              // 存储创建的 Shader Program
+    std::vector<unsigned int> vaoIds_; // 存储创建的 VAO ID
+    std::vector<Shader> shaderPrograms_; // 存储创建的 Shader Program
     Texture texture_; // 存储创建的纹理对象
+    glm::vec3 cameraPos_ = { 0.0f, 0.0f, 3.0f }; // 相机位置
+    glm::vec3 cameraFront_ = { 0.0f, 0.0f, -1.0f }; // 相机朝向，pos + front = 观察点
+    glm::vec3 cameraUp_ = { 0.0f, 1.0f, 0.0f }; // 参考上方向
+    float cameraSpeed_ = 0.05f;
 
     // 可扩展的按键处理器支持
     struct KeyCombo {
@@ -58,13 +68,14 @@ private:
         bool operator==(KeyCombo const& o) const noexcept { return key == o.key && mods == o.mods; }
     };
     struct KeyComboHash {
-        std::size_t operator()(KeyCombo const& k) const noexcept {
+        std::size_t operator()(KeyCombo const& k) const noexcept
+        {
             // 将 int 位模式安全转为 uint32_t（保留负数补码）
             uint32_t key_u32 = static_cast<uint32_t>(k.key);
             uint32_t mods_u32 = static_cast<uint32_t>(k.mods);
             // 用 uint64_t 中间计算，再转为 size_t（避免 32 位移位问题）
             uint64_t hash64 = (static_cast<uint64_t>(key_u32) << 32) | mods_u32;
-            return std::hash<uint64_t>{}(hash64);
+            return std::hash<uint64_t> { }(hash64);
         }
     };
 
