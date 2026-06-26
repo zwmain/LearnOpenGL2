@@ -38,3 +38,4 @@ add_subdirectory("01.16.Texture-mix")
 
 add_subdirectory("02.01.3D-transform")
 add_subdirectory("02.02.3D-rect")
+add_subdirectory("02.03.3D-box")
