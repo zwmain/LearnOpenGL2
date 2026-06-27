@@ -22,13 +22,10 @@ class Camera {
 public:
     // 构造函数
     Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 3.0f),
-        glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f),
-        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f))
+        glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f))
     {
         position_ = position;
-        front_ = front;
-        up_ = up;
-        worldUp_ = up;
+        worldUp_ = worldUp;
     }
 
     // 析构函数
@@ -72,9 +69,10 @@ public:
 
     // 获取各种相机参数
     const glm::vec3& GetPosition() const { return position_; }
-    const glm::vec3& GetFront() const { return front_; }
-    const glm::vec3& GetUp() const { return up_; }
-    const glm::vec3& GetRight() const { return right_; }
+    const glm::vec3& GetWorldUp() const { return worldUp_; }
+    virtual glm::vec3 GetFront() const = 0;
+    virtual glm::vec3 GetUp() const = 0;
+    virtual glm::vec3 GetRight() const = 0;
     float GetZoom() const { return zoom_; }
     virtual void Reset() = 0;
 
@@ -85,9 +83,6 @@ public:
 protected:
     // 相机属性
     glm::vec3 position_ { 0.0f, 0.0f, 3.0f };
-    glm::vec3 front_ { 0.0f, 0.0f, -1.0f };
-    glm::vec3 up_ { 0.0f, 1.0f, 0.0f };
-    glm::vec3 right_ { 1.0f, 0.0f, 0.0f };
     glm::vec3 worldUp_ { 0.0f, 1.0f, 0.0f };
 
     // 相机选项

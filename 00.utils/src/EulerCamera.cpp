@@ -1,9 +1,11 @@
 #include "EulerCamera.h"
 
 // EulerCamera 构造函数实现
-EulerCamera::EulerCamera(glm::vec3 position, glm::vec3 front, glm::vec3 up,
+EulerCamera::EulerCamera(glm::vec3 position, glm::vec3 front, glm::vec3 worldUp,
                          float yaw, float pitch)
-    : Camera(position, front, up)
+    : Camera(position, worldUp)
+    , front_(front)
+    , up_(worldUp)
     , yaw_(yaw)
     , pitch_(pitch)
 {
