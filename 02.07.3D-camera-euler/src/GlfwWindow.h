@@ -49,6 +49,7 @@ private:
     void OnA(int key, int action, int mods);
     void OnS(int key, int action, int mods);
     void OnD(int key, int action, int mods);
+    void OnEscape(int key, int action, int mods);
 
 private:
     GLFWwindow* window_ = nullptr; // GLFW 窗口对象指针

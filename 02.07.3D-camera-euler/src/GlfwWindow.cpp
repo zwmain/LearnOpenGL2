@@ -78,6 +78,8 @@ MainWindow::MainWindow(const char* title, int width, int height)
         std::bind(&MainWindow::OnS, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     RegisterKeyHandler(GLFW_KEY_D, 0,
         std::bind(&MainWindow::OnD, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    RegisterKeyHandler(GLFW_KEY_ESCAPE, 0,
+        std::bind(&MainWindow::OnEscape, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
 MainWindow::~MainWindow()
@@ -442,5 +444,11 @@ void MainWindow::OnD(int key, int action, int mods)
 {
     if (action == GLFW_REPEAT) {
         cameraPos_ += glm::normalize(glm::cross(cameraFront_, cameraUp_)) * cameraSpeed_;
+    }
+}
+
+void MainWindow::OnEscape(int key, int action, int mods) {
+    if (action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window_, GLFW_TRUE);
     }
 }
