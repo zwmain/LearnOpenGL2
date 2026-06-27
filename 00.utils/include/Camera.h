@@ -76,16 +76,7 @@ public:
     const glm::vec3& GetUp() const { return up_; }
     const glm::vec3& GetRight() const { return right_; }
     float GetZoom() const { return zoom_; }
-    void Reset(glm::vec3 position = glm::vec3(0.0f, 0.0f, 3.0f),
-        glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f),
-        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f))
-    {
-        position_ = position;
-        front_ = front;
-        up_ = up;
-        worldUp_ = up;
-        UpdateCameraVectors();
-    }
+    virtual void Reset() = 0;
 
     void SetPerspectiveProjection(bool perspective) { isPerspective_ = perspective; }
     bool IsPerspectiveProjection() const { return isPerspective_; }
@@ -106,7 +97,4 @@ protected:
 
     // 是否使用透视投影
     bool isPerspective_ = true;
-
-    // 更新相机向量
-    virtual void UpdateCameraVectors() = 0;
 };

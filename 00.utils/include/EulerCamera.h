@@ -20,9 +20,11 @@ public:
     // 处理鼠标移动
     void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true) override;
 
+    void Reset() override;
+
 protected:
     // 更新相机向量
-    void UpdateCameraVectors() override;
+    void UpdateCameraVectors();
 
 private:
     // 欧拉角

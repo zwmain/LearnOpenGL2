@@ -54,6 +54,19 @@ void EulerCamera::ProcessMouseMovement(float xoffset, float yoffset, bool constr
     UpdateCameraVectors();
 }
 
+void EulerCamera::Reset()
+{
+    position_ = glm::vec3(0.0f, 0.0f, 3.0f);
+    front_ = glm::vec3(0.0f, 0.0f, -1.0f);
+    worldUp_ = glm::vec3(0.0f, 1.0f, 0.0f);
+    up_ = worldUp_;
+
+    // 因为下面调用了 UpdateCameraVectors()，所以 yaw_ 和 pitch_ 也需要被重置
+    yaw_ = -90.0f;
+    pitch_ = 0.0f;
+    UpdateCameraVectors();
+}
+
 // 更新相机向量实现
 void EulerCamera::UpdateCameraVectors()
 {
