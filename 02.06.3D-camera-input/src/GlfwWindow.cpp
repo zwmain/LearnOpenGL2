@@ -132,6 +132,10 @@ void MainWindow::RegisterKeyHandler(int key, int mods, KeyHandler handler)
 
 void MainWindow::Render()
 {
+    float curFrameTime = static_cast<float>(glfwGetTime());
+    deltaTime_ = curFrameTime - lastFrameTime_;
+    lastFrameTime_ = curFrameTime;
+    cameraSpeed_ = 2.5f * deltaTime_;
     // 启用当前着色器程序并绑定 VAO，然后绘制三角形
     shaderPrograms_[0].UseProgram();
     shaderPrograms_[0].SetUniform1i("sampler", 0);
@@ -356,28 +360,28 @@ void MainWindow::OnCtrlR(int key, int action, int mods)
 
 void MainWindow::OnW(int key, int action, int mods)
 {
-    if (action == GLFW_PRESS) {
+    if (action == GLFW_REPEAT) {
         cameraPos_ += cameraSpeed_ * cameraFront_;
     }
 }
 
 void MainWindow::OnA(int key, int action, int mods)
 {
-    if (action == GLFW_PRESS) {
+    if (action == GLFW_REPEAT) {
         cameraPos_ -= glm::normalize(glm::cross(cameraFront_, cameraUp_)) * cameraSpeed_;
     }
 }
 
 void MainWindow::OnS(int key, int action, int mods)
 {
-    if (action == GLFW_PRESS) {
+    if (action == GLFW_REPEAT) {
         cameraPos_ -= cameraSpeed_ * cameraFront_;
     }
 }
 
 void MainWindow::OnD(int key, int action, int mods)
 {
-    if (action == GLFW_PRESS) {
+    if (action == GLFW_REPEAT) {
         cameraPos_ += glm::normalize(glm::cross(cameraFront_, cameraUp_)) * cameraSpeed_;
     }
 }

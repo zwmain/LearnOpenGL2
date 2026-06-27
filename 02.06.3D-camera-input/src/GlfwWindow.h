@@ -60,6 +60,8 @@ private:
     glm::vec3 cameraFront_ = { 0.0f, 0.0f, -1.0f }; // 相机朝向，pos + front = 观察点
     glm::vec3 cameraUp_ = { 0.0f, 1.0f, 0.0f }; // 参考上方向
     float cameraSpeed_ = 0.05f;
+    float deltaTime_ = 0.0f; // 当前帧与上一帧的时间差
+    float lastFrameTime_ = 0.0f; // 上一帧的时间戳
 
     // 可扩展的按键处理器支持
     struct KeyCombo {
