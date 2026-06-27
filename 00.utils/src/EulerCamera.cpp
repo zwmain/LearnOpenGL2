@@ -1,10 +1,9 @@
 #include "EulerCamera.h"
 
 // EulerCamera 构造函数实现
-EulerCamera::EulerCamera(glm::vec3 position, glm::vec3 front, glm::vec3 worldUp,
-                         float yaw, float pitch)
+EulerCamera::EulerCamera(glm::vec3 position, glm::vec3 worldUp,
+    float yaw, float pitch)
     : Camera(position, worldUp)
-    , front_(front)
     , up_(worldUp)
     , yaw_(yaw)
     , pitch_(pitch)
@@ -39,7 +38,7 @@ void EulerCamera::ProcessKeyboard(CameraDirection direction, float deltaTime)
 // 处理鼠标移动实现
 void EulerCamera::ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch)
 {
-    //std::cout << xoffset << " " << yoffset << std::endl;
+    // std::cout << xoffset << " " << yoffset << std::endl;
     xoffset *= mouseSensitivity_;
     yoffset *= mouseSensitivity_;
 
