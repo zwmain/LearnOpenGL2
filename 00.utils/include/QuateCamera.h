@@ -35,6 +35,9 @@ public:
 private:
     glm::quat orientation_ { 1.0f, 0.0f, 0.0f, 0.0f }; // w, x, y, z
     // 四元数虽不依赖欧拉角，用欧拉角可以方便的描述物体状态，以及处理鼠标输入
+    // 这里严格意义不能叫欧拉角，应该叫绕轴旋转角度，yaw/pitch/roll分别表示绕y/x/z轴旋转的角度
+    // 绕y轴旋转0度时，指向z轴负方向；欧拉角的yaw偏航角为0度时则是指向x轴正方向
+    // 三个变量可以改名为angleY/angleX/angleZ，分别表示绕y/x/z轴旋转的角度
     float yaw_ { 0.0f }; // 初始偏航角，与欧拉角不同，四元数里面，yaw为0指向z负方向
     float pitch_ { 0.0f }; // 当前俯仰角 (度)
     float roll_ { 0.0f }; // 当前滚转角 (度)
