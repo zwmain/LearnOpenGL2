@@ -173,6 +173,8 @@ void MainWindow::OnMouseScroll(double xoffset, double yoffset)
     if (!isFocus_) {
         return;
     }
+    // 顺时针旋转，yoffset < 0，需要做的是缩小
+    // 逆时针旋转，yoffset > 0，需要做的是放大
     camera_->ProcessMouseScroll(yoffset);
 }
 

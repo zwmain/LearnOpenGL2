@@ -53,6 +53,8 @@ public:
     // 处理鼠标滚轮
     void ProcessMouseScroll(float yoffset)
     {
+        // 顺时针旋转，yoffset < 0，需要做的是缩小
+        // 逆时针旋转，yoffset > 0，需要做的是放大
         zoom_ -= yoffset * 0.05;
         if (zoom_ < 0.0f)
             zoom_ = 0.0f;
