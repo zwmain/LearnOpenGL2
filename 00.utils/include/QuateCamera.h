@@ -6,10 +6,10 @@
 /**
  * @brief 基于四元数的相机实现
  */
-class QuaternionCamera : public Camera {
+class QuateCamera : public Camera {
 public:
     // 构造函数
-    QuaternionCamera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 3.0f),
+    QuateCamera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 3.0f),
         glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f))
         : Camera(position, worldUp)
     {
@@ -18,7 +18,7 @@ public:
     }
 
     // 析构函数
-    ~QuaternionCamera() override = default;
+    ~QuateCamera() override = default;
 
     // 1. 获取视图矩阵
     glm::mat4 GetViewMatrix() const override;

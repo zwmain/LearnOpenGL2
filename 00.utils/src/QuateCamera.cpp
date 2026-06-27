@@ -2,7 +2,7 @@
 #include "QuateCamera.h"
 #include <algorithm> // For std::clamp
 
-// QuaternionCamera 实现文件
+// QuateCamera 实现文件
 
 /*
  * @brief: 基于四元数的相机类实现
@@ -16,7 +16,7 @@
 // ============================================================================
 // 方法 1: GetViewMatrix() - 获取视图矩阵
 // ============================================================================
-glm::mat4 QuaternionCamera::GetViewMatrix() const
+glm::mat4 QuateCamera::GetViewMatrix() const
 {
     // 四元数不使用 glm::lookAt 构造view矩阵\
 
@@ -33,7 +33,7 @@ glm::mat4 QuaternionCamera::GetViewMatrix() const
 // ============================================================================
 // 方法 2: ProcessKeyboard() - 处理键盘输入 (移动)
 // ============================================================================
-void QuaternionCamera::ProcessKeyboard(CameraDirection direction, float deltaTime)
+void QuateCamera::ProcessKeyboard(CameraDirection direction, float deltaTime)
 {
     // 相机移动也不使用局部坐标系，也不需要右向量/上向量
     // 计算移动速度
@@ -82,7 +82,7 @@ void QuaternionCamera::ProcessKeyboard(CameraDirection direction, float deltaTim
 // ============================================================================
 // 方法 3: ProcessMouseMovement() - 处理鼠标移动 (旋转)
 // ============================================================================
-void QuaternionCamera::ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch)
+void QuateCamera::ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch)
 {
     xoffset *= mouseSensitivity_;
     yoffset *= mouseSensitivity_;
@@ -104,7 +104,7 @@ void QuaternionCamera::ProcessMouseMovement(float xoffset, float yoffset, bool c
 // ============================================================================
 // 方法 7: Reset() - 重置相机到初始状态
 // ============================================================================
-void QuaternionCamera::Reset()
+void QuateCamera::Reset()
 {
     // 重置位置
     position_ = glm::vec3(0.0f, 0.0f, 3.0f);
@@ -121,7 +121,7 @@ void QuaternionCamera::Reset()
 // ============================================================================
 // private 方法：UpdateOrientationFromEuler() - 从欧拉角更新四元数方向
 // ============================================================================
-void QuaternionCamera::UpdateOrientationFromEuler()
+void QuateCamera::UpdateOrientationFromEuler()
 {
     // 1. 绕 Y 轴旋转 (Yaw)转为四元数
     glm::quat qYaw = glm::angleAxis(glm::radians(yaw_), glm::vec3(0, 1, 0));
