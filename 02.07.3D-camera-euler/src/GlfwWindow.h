@@ -72,6 +72,7 @@ private:
     float pitch_ = 0.0f; // 垂直旋转角度，初始值为 0 度
     bool firstMouse_ = true; // 是否是第一次鼠标移动事件，用于初始化 lastX_ 和 lastY_
     float fov_ = 45.0f; // 视野角度，初始值为 45 度
+    bool isFocus_ = true; // 窗口是否处于焦点状态
 
     // 可扩展的按键处理器支持
     struct KeyCombo {

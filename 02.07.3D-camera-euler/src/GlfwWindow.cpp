@@ -143,6 +143,9 @@ void MainWindow::OnKey(int key, int scanmode, int action, int mods)
 
 void MainWindow::OnMouseMove(double xpos, double ypos)
 {
+    if (!isFocus_) {
+        return;
+    }
     if (firstMouse_) {
         lastX_ = xpos;
         lastY_ = ypos;
@@ -176,6 +179,9 @@ void MainWindow::OnMouseMove(double xpos, double ypos)
 
 void MainWindow::OnMouseScroll(double xoffset, double yoffset)
 {
+    if (!isFocus_) {
+        return;
+    }
     fov_ -= static_cast<float>(yoffset);
     if (fov_ <= 1.0f) {
         fov_ = 1.0f;
@@ -449,6 +455,8 @@ void MainWindow::OnD(int key, int action, int mods)
 
 void MainWindow::OnEscape(int key, int action, int mods) {
     if (action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window_, GLFW_TRUE);
+        // glfwSetWindowShouldClose(window_, GLFW_TRUE);
+        glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        isFocus_ = false;
     }
 }
