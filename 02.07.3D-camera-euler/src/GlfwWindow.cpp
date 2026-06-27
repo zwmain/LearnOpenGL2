@@ -32,6 +32,12 @@ void MouseCallBack(GLFWwindow* window, double xpos, double ypos)
     obj->OnMouseMove(xpos, ypos);
 }
 
+void MouseScrollCallBack(GLFWwindow* window, double xoffset, double yoffset)
+{
+    auto* obj = static_cast<MainWindow*>(glfwGetWindowUserPointer(window));
+    obj->OnMouseScroll(xoffset, yoffset);
+}
+
 } // namespace
 
 MainWindow::MainWindow(const char* title, int width, int height)
@@ -56,6 +62,7 @@ MainWindow::MainWindow(const char* title, int width, int height)
     glfwSetKeyCallback(window_, KeyCallBack);
     glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window_, MouseCallBack);
+    glfwSetScrollCallback(window_, MouseScrollCallBack);
 
     // 注册默认的 Ctrl+P 快捷键处理器（在初始化阶段注册）
     RegisterKeyHandler(GLFW_KEY_P, GLFW_MOD_CONTROL,
@@ -165,6 +172,17 @@ void MainWindow::OnMouseMove(double xpos, double ypos)
     cameraFront_ = glm::normalize(front);
 }
 
+void MainWindow::OnMouseScroll(double xoffset, double yoffset)
+{
+    fov_ -= static_cast<float>(yoffset);
+    if (fov_ <= 1.0f) {
+        fov_ = 1.0f;
+    }
+    if (fov_ >= 50.0f) {
+        fov_ = 50.0f;
+    }
+}
+
 void MainWindow::RegisterKeyHandler(int key, int mods, KeyHandler handler)
 {
     KeyCombo combo { key, mods };
@@ -196,7 +214,7 @@ void MainWindow::Render()
     glm::mat4 projection = glm::mat4(1.0f);
     if (isPerspective_) {
         // 使用透视投影，近裁剪面距离为0.1，远裁剪面距离为100
-        projection = glm::perspective(glm::radians(45.0f), static_cast<float>(width_) / height_, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(fov_), static_cast<float>(width_) / height_, 0.1f, 100.0f);
     } else {
         float orthoSize = 5.0f;
         float aspect = width_ / static_cast<float>(height_); // 计算窗口宽高比

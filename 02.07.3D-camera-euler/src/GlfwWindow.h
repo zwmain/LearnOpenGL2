@@ -26,6 +26,7 @@ public:
     // GLFW 回调触发时调用：处理键盘输入事件
     void OnKey(int key, int scanmode, int action, int mods);
     void OnMouseMove(double xpos, double ypos);
+    void OnMouseScroll(double xoffset, double yoffset);
 
     // 注册按键处理器：返回用于注销的 token（非 0 有效）
     // 回调签名：void(int key, int action, int mods)
@@ -69,6 +70,7 @@ private:
     float yaw_ = -90.0f; // 水平旋转角度，初始值为 -90 度，使得相机朝向负 z 轴
     float pitch_ = 0.0f; // 垂直旋转角度，初始值为 0 度
     bool firstMouse_ = true; // 是否是第一次鼠标移动事件，用于初始化 lastX_ 和 lastY_
+    float fov_ = 45.0f; // 视野角度，初始值为 45 度
 
     // 可扩展的按键处理器支持
     struct KeyCombo {
