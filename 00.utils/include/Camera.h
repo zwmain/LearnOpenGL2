@@ -40,8 +40,16 @@ public:
     // 获取投影矩阵
     glm::mat4 GetProjectionMatrix(float aspectRatio) const
     {
+        float near = 0.1f;
+        float far = 1000.0f;
         float fov = glm::radians(45.0f * zoom_); // 视野角度
-        return glm::perspective(fov, aspectRatio, 0.1f, 1000.0f);
+        if (isPerspective_) {
+            return glm::perspective(fov, aspectRatio, near, far);
+        } else {
+            float top = tan(fov / 2.0f) * ((near + far) / 200.0f); // 这里除以200是尝试出来的
+            float right = top * aspectRatio;
+            return glm::ortho(-right, right, -top, top, near, far);
+        }
     }
 
     // 处理键盘输入
@@ -79,6 +87,10 @@ public:
         UpdateCameraVectors();
     }
 
+    void SetPerspectiveProjection(bool perspective) { isPerspective_ = perspective; }
+    bool IsPerspectiveProjection() const { return isPerspective_; }
+    void ToggleProjectionMode() { isPerspective_ = !isPerspective_; }
+
 protected:
     // 相机属性
     glm::vec3 position_ { 0.0f, 0.0f, 3.0f };
@@ -91,6 +103,9 @@ protected:
     float moveSpeed_ = 2.5f;
     float mouseSensitivity_ = 0.1f;
     float zoom_ = 1.0f; // 缩放倍数
+
+    // 是否使用透视投影
+    bool isPerspective_ = true;
 
     // 更新相机向量
     virtual void UpdateCameraVectors() = 0;

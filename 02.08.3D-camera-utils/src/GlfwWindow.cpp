@@ -214,19 +214,7 @@ void MainWindow::Render()
     glm::mat4 view = camera_->GetViewMatrix();
 
     // 创建投影矩阵
-    glm::mat4 projection = glm::mat4(1.0f);
-    if (isPerspective_) {
-        projection = camera_->GetProjectionMatrix(static_cast<float>(width_) / height_);
-    } else {
-        float orthoSize = 5.0f;
-        float aspect = width_ / static_cast<float>(height_); // 计算窗口宽高比
-        float halfWidth = orthoSize * aspect; // X 轴范围按宽高比扩展
-
-        projection = glm::ortho(
-            -halfWidth, halfWidth, // X: [-50*aspect, 50*aspect]
-            -orthoSize, orthoSize, // Y: 保持 [-50, 50]
-            0.1f, 100.0f);
-    }
+    glm::mat4 projection = camera_->GetProjectionMatrix(static_cast<float>(width_) / height_);
 
     // 将视图和投影矩阵传入顶点着色器
     shaderPrograms_[0].SetUniformMat4f("view", glm::value_ptr(view));
@@ -407,8 +395,8 @@ void MainWindow::PrepareTexture()
 void MainWindow::OnCtrlP(int key, int action, int mods)
 {
     if (action == GLFW_PRESS) {
-        isPerspective_ = !isPerspective_;
-        std::cout << "Projection mode switched to: " << (isPerspective_ ? "Perspective" : "Orthographic") << std::endl;
+        camera_->ToggleProjectionMode();
+        std::cout << "Projection mode switched to: " << (camera_->IsPerspectiveProjection() ? "Perspective" : "Orthographic") << std::endl;
     }
 }
 

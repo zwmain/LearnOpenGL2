@@ -58,7 +58,6 @@ private:
     GLFWwindow* window_ = nullptr; // GLFW 窗口对象指针
     int width_ = 800; // 窗口宽度
     int height_ = 600; // 窗口高度
-    bool isPerspective_ = true; // 是否使用透视投影
     std::vector<unsigned int> vaoIds_; // 存储创建的 VAO ID
     std::vector<Shader> shaderPrograms_; // 存储创建的 Shader Program
     Texture texture_; // 存储创建的纹理对象
