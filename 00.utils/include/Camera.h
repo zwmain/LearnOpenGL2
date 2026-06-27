@@ -40,7 +40,8 @@ public:
     // 获取投影矩阵
     glm::mat4 GetProjectionMatrix(float aspectRatio) const
     {
-        return glm::perspective(glm::radians(zoom_), aspectRatio, 0.1f, 1000.0f);
+        float fov = glm::radians(45.0f * zoom_); // 视野角度
+        return glm::perspective(fov, aspectRatio, 0.1f, 1000.0f);
     }
 
     // 处理键盘输入
@@ -52,11 +53,11 @@ public:
     // 处理鼠标滚轮
     void ProcessMouseScroll(float yoffset)
     {
-        zoom_ -= (float)yoffset;
-        if (zoom_ < 1.0f)
-            zoom_ = 1.0f;
-        if (zoom_ > 45.0f)
-            zoom_ = 45.0f;
+        zoom_ -= yoffset * 0.05;
+        if (zoom_ < 0.0f)
+            zoom_ = 0.0f;
+        if (zoom_ > 1.3f)
+            zoom_ = 1.3f;
     }
 
     // 获取各种相机参数
@@ -87,7 +88,7 @@ protected:
     // 相机选项
     float moveSpeed_ = 2.5f;
     float mouseSensitivity_ = 0.1f;
-    float zoom_ = 45.0f;
+    float zoom_ = 1.0f; // 缩放倍数
 
     // 更新相机向量
     virtual void UpdateCameraVectors() = 0;
