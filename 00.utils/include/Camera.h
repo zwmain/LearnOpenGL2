@@ -70,9 +70,6 @@ public:
     // 获取各种相机参数
     const glm::vec3& GetPosition() const { return position_; }
     const glm::vec3& GetWorldUp() const { return worldUp_; }
-    virtual glm::vec3 GetFront() const = 0;
-    virtual glm::vec3 GetUp() const = 0;
-    virtual glm::vec3 GetRight() const = 0;
     float GetZoom() const { return zoom_; }
     virtual void Reset() = 0;
 

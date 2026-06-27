@@ -20,9 +20,9 @@ public:
     // 处理鼠标移动
     void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true) override;
 
-    glm::vec3 GetFront() const override { return front_; }
-    glm::vec3 GetUp() const override { return up_; }
-    glm::vec3 GetRight() const override { return right_; }
+    glm::vec3 GetFront() const { return front_; }
+    glm::vec3 GetUp() const { return up_; }
+    glm::vec3 GetRight() const { return right_; }
 
     void Reset() override;
 
