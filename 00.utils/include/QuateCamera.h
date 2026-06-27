@@ -35,10 +35,9 @@ public:
 private:
     glm::quat orientation_ { 1.0f, 0.0f, 0.0f, 0.0f }; // w, x, y, z
     // 四元数虽不依赖欧拉角，用欧拉角可以方便的描述物体状态，以及处理鼠标输入
-    float yaw_ { -90.0f }; // 初始偏航角
+    float yaw_ { 0.0f }; // 初始偏航角，与欧拉角不同，四元数里面，yaw为0指向z负方向
     float pitch_ { 0.0f }; // 当前俯仰角 (度)
     float roll_ { 0.0f }; // 当前滚转角 (度)
-    glm::vec3 front_ { 0.0f, 0.0f, -1.0f };
 
     // 辅助函数：仅用于构造函数初始化
     void UpdateOrientationFromEuler();

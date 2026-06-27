@@ -39,6 +39,7 @@ void EulerCamera::ProcessKeyboard(CameraDirection direction, float deltaTime)
 // 处理鼠标移动实现
 void EulerCamera::ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch)
 {
+    //std::cout << xoffset << " " << yoffset << std::endl;
     xoffset *= mouseSensitivity_;
     yoffset *= mouseSensitivity_;
 
@@ -73,6 +74,8 @@ void EulerCamera::Reset()
 void EulerCamera::UpdateCameraVectors()
 {
     // 计算新的前向量
+    // 当yaw为0时，front朝向x正方向；当yaw为-90时，front朝向z负方向
+    // 这是公式决定的，当然也可以改为当yaw为0时，front朝向z负方向
     glm::vec3 front { 0, 0, 0 };
     front.x = cos(glm::radians(yaw_)) * cos(glm::radians(pitch_));
     front.y = sin(glm::radians(pitch_));

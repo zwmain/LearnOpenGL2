@@ -35,6 +35,6 @@ private:
     glm::vec3 up_ { 0.0f, 1.0f, 0.0f };
     glm::vec3 right_ { 1.0f, 0.0f, 0.0f };
     // 欧拉角
-    float yaw_;
+    float yaw_; // yaw为0是指向x正方向；-90才是指向z负方向
     float pitch_;
 };
