@@ -38,6 +38,12 @@ void MouseScrollCallBack(GLFWwindow* window, double xoffset, double yoffset)
     obj->OnMouseScroll(xoffset, yoffset);
 }
 
+void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    auto* obj = static_cast<MainWindow*>(glfwGetWindowUserPointer(window));
+    obj->OnMouseClick(button, action, mods);
+}
+
 } // namespace
 
 MainWindow::MainWindow(const char* title, int width, int height)
@@ -63,6 +69,7 @@ MainWindow::MainWindow(const char* title, int width, int height)
     glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window_, MouseCallBack);
     glfwSetScrollCallback(window_, MouseScrollCallBack);
+    glfwSetMouseButtonCallback(window_, MouseButtonCallback);
 
     // 注册默认的 Ctrl+P 快捷键处理器（在初始化阶段注册）
     RegisterKeyHandler(GLFW_KEY_P, GLFW_MOD_CONTROL,
@@ -146,10 +153,10 @@ void MainWindow::OnMouseMove(double xpos, double ypos)
     if (!isFocus_) {
         return;
     }
-    if (firstMouse_) {
+    if (isFirstMouse_) {
         lastX_ = xpos;
         lastY_ = ypos;
-        firstMouse_ = false;
+        isFirstMouse_ = false;
     }
     float xoffset = xpos - lastX_;
     float yoffset = lastY_ - ypos; // 注意这里是相反的，因为y坐标是从底部往顶部依次增大的
@@ -188,6 +195,15 @@ void MainWindow::OnMouseScroll(double xoffset, double yoffset)
     }
     if (fov_ >= 50.0f) {
         fov_ = 50.0f;
+    }
+}
+
+void MainWindow::OnMouseClick(int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        isFocus_ = true;  // 获取焦点
+        isFirstMouse_ = true; // 重置鼠标首次移动标志
+        glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // 隐藏鼠标光标
     }
 }
 
