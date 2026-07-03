@@ -18,12 +18,26 @@
 // ============================================================================
 glm::mat4 QuateCamera::GetViewMatrix() const
 {
+
+    //换个视角看世界，那么就要挪动相机；以世界为参考系，过程是：
+
+    // 1. 相机本体就和普通物体一样，绕世界坐标系旋转
+    // 2. 在以世界坐标系为参考平移到相机位置
+
+    // 那么站在相机的视角，以相机坐标系为参考系，过程就变为了
+
+    // 1. 将整个世界延相机位置相反的方向平移
+    // 2. 再根据相机坐标系进行旋转，旋转的是整个世界
+
+
     // 使用四元数的共轭（逆）作为视图的旋转部分
     glm::mat4 rotationMatrix = glm::mat4_cast(glm::conjugate(orientation_));
     // 平移矩阵：将世界反向平移到相机位置
     glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), -position_);
-    // 视图矩阵 = 逆旋转 * 平移（先旋转再平移）
+    // 视图矩阵 = 逆旋转 * 平移（相当于把世界先平移，再旋转）
     glm::mat4 view = rotationMatrix * translationMatrix;
+
+    // 由于是反过程/逆过程，因此旋转矩阵是逆矩阵，平移矩阵也是取负数
 
     return view;
 }
