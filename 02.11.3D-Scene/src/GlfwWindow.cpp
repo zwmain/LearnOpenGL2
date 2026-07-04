@@ -112,12 +112,11 @@ void MainWindow::Run()
     Color clearColor(0x35, 0x5c, 0x7d);
     glClearColor(clearColor.R(), clearColor.G(), clearColor.B(), clearColor.A());
 
-    camera_ = std::make_unique<QuateCamera>();
-
     // 先准备着色器，再准备顶点数据
     PrepareShader();
     PrepareData();
     PrepareTexture();
+    PrepareScene();
 
     // 主循环：处理事件、清屏、渲染、交换缓冲区
     while (!glfwWindowShouldClose(window_)) {
@@ -199,19 +198,8 @@ void MainWindow::Render()
     deltaTime_ = curFrameTime - lastFrameTime_;
     lastFrameTime_ = curFrameTime;
 
-    shaderPrograms_[0].UseProgram();
-    shaderPrograms_[0].SetUniform1i("sampler", 0);
-
-    glm::mat4 view = camera_->GetViewMatrix();
-    glm::mat4 projection = camera_->GetProjectionMatrix(static_cast<float>(width_) / height_);
-
-    shaderPrograms_[0].SetUniformMat4f("view", glm::value_ptr(view));
-    shaderPrograms_[0].SetUniformMat4f("projection", glm::value_ptr(projection));
-
-    for (auto& obj : gameObjects_) {
-        glm::mat4 model = obj.transform.GetModelMatrix();
-        shaderPrograms_[0].SetUniformMat4f("model", glm::value_ptr(model));
-        obj.mesh->Draw();
+    for (auto& scene : scenes_) {
+        scene.Render(static_cast<float>(width_) / height_);
     }
 }
 
@@ -298,14 +286,37 @@ void MainWindow::PrepareData()
         eleIndex.push_back(base + 0);
     }
 
-    auto cubeMesh = std::make_shared<Mesh>();
-    cubeMesh->SetIndexBuffer(eleIndex);
-    cubeMesh->AddVertexBuffer(vertices);
-    int location = shaderPrograms_[0].GetAttrLocation("aPos");
-    cubeMesh->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    cubeMesh->AddVertexBuffer(uvs);
-    location = shaderPrograms_[0].GetAttrLocation("aUv");
-    cubeMesh->AddVertexAttribute(location, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+    mesh_ = std::make_shared<Mesh>();
+    mesh_->SetIndexBuffer(eleIndex);
+    mesh_->AddVertexBuffer(vertices);
+    int location = shader_->GetAttrLocation("aPos");
+    mesh_->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    mesh_->AddVertexBuffer(uvs);
+    location = shader_->GetAttrLocation("aUv");
+    mesh_->AddVertexAttribute(location, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+}
+
+void MainWindow::PrepareShader()
+{
+    // 获取当前执行目录（当前工作目录）
+    std::string currentDir = fs::current_path().string();
+
+    // 使用绝对路径（相对于 exe 所在目录的 assets 文件夹）
+    std::string vertexPath = currentDir + R"(/assets/shader/vertex/vertex.glsl)";
+    std::string fragmentPath = currentDir + R"(/assets/shader/fragment/fragment.glsl)";
+
+    shader_ = std::make_shared<Shader>(vertexPath, fragmentPath);
+}
+
+void MainWindow::PrepareTexture()
+{
+    texture_ = std::make_shared<Texture>();
+    texture_->LoadFromFile("assets/image/gugugaga.jpeg", 0);
+}
+
+void MainWindow::PrepareScene()
+{
+    camera_ = std::make_shared<QuateCamera>();
 
     std::vector<glm::vec3> cubePositions = {
         glm::vec3(0.0f, 0.0f, 0.0f),
@@ -321,35 +332,22 @@ void MainWindow::PrepareData()
     };
 
     for (int i = 0; i < cubePositions.size(); ++i) {
-        GameObject obj;
-        obj.mesh = cubeMesh;
+        Scene scene;
+        scene.SetMesh(mesh_);
+        scene.SetCamera(camera_);
+        scene.SetShader(shader_);
+        scene.SetTexture(texture_);
 
-        obj.transform.SetRotation(glm::vec3(-45.0f, 0.0f, 45.0f));
+        auto transform = std::make_shared<Transform>();
+        transform->SetRotation(glm::vec3(-45.0f, 0.0f, 45.0f));
         if (i > 0) {
-            obj.transform.SetPosition(cubePositions[i]);
-            obj.transform.Rotate(glm::vec3(0.0f, i * 10.0f, 0.0f));
+            transform->SetPosition(cubePositions[i]);
+            transform->Rotate(glm::vec3(0.0f, i * 10.0f, 0.0f));
         }
+        scene.SetTransform(transform);
 
-        gameObjects_.push_back(std::move(obj));
+        scenes_.push_back(std::move(scene));
     }
-}
-
-void MainWindow::PrepareShader()
-{
-    // 获取当前执行目录（当前工作目录）
-    std::string currentDir = fs::current_path().string();
-
-    // 使用绝对路径（相对于 exe 所在目录的 assets 文件夹）
-    std::string vertexPath = currentDir + R"(/assets/shader/vertex/vertex.glsl)";
-    std::string fragmentPath = currentDir + R"(/assets/shader/fragment/fragment.glsl)";
-
-    Shader shader(vertexPath, fragmentPath);
-    shaderPrograms_.push_back(shader);
-}
-
-void MainWindow::PrepareTexture()
-{
-    texture_.LoadFromFile("assets/image/gugugaga.jpeg", 0);
 }
 
 void MainWindow::OnCtrlP(int key, int action, int mods)
