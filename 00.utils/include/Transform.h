@@ -4,17 +4,24 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 class Transform {
-public:
-    glm::vec3 position { 0.0f, 0.0f, 0.0f };
-    glm::vec3 rotation { 0.0f, 0.0f, 0.0f };
-    glm::vec3 scale { 1.0f, 1.0f, 1.0f };
+private:
+    glm::vec3 position_ { 0.0f, 0.0f, 0.0f };
+    glm::vec3 rotation_ { 0.0f, 0.0f, 0.0f };
+    glm::vec3 scale_ { 1.0f, 1.0f, 1.0f };
 
+public:
     glm::mat4 GetModelMatrix() const;
 
     void Reset();
-    void SetPosition(float x, float y, float z);
-    void SetRotation(float x, float y, float z);
-    void SetScale(float x, float y, float z);
-    void Translate(float x, float y, float z);
-    void Rotate(float x, float y, float z);
+    void SetPosition(const glm::vec3& pos);
+    void SetRotation(const glm::vec3& rot);
+    void SetScale(const glm::vec3& scale);
+
+    // Getter 方法
+    const glm::vec3& GetPosition() const { return position_; }
+    const glm::vec3& GetRotation() const { return rotation_; }
+    const glm::vec3& GetScale() const { return scale_; }
+
+    void Translate(const glm::vec3& translation);
+    void Rotate(const glm::vec3& rotation);
 };

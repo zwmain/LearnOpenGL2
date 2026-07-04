@@ -324,11 +324,10 @@ void MainWindow::PrepareData()
         GameObject obj;
         obj.mesh = cubeMesh;
 
-        obj.transform.rotation.x = -45.0f;
-        obj.transform.rotation.z = 45.0f;
+        obj.transform.SetRotation(glm::vec3(-45.0f, 0.0f, 45.0f));
         if (i > 0) {
-            obj.transform.position = cubePositions[i];
-            obj.transform.rotation.y = static_cast<float>(i * 10.0f);
+            obj.transform.SetPosition(cubePositions[i]);
+            obj.transform.Rotate(glm::vec3(0.0f, i * 10.0f, 0.0f));
         }
 
         gameObjects_.push_back(std::move(obj));
