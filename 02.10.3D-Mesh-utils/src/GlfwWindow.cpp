@@ -198,46 +198,20 @@ void MainWindow::Render()
     float curFrameTime = static_cast<float>(glfwGetTime());
     deltaTime_ = curFrameTime - lastFrameTime_;
     lastFrameTime_ = curFrameTime;
-    // 启用当前着色器程序并绑定 VAO，然后绘制三角形
+
     shaderPrograms_[0].UseProgram();
     shaderPrograms_[0].SetUniform1i("sampler", 0);
 
-    // 创建基础模型矩阵，把模型绕x/z轴旋转-45/45度，放到世界坐标中
-    glm::mat4 baseModel = glm::mat4(1.0f);
-    baseModel = glm::rotate(baseModel, glm::radians(-45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    baseModel = glm::rotate(baseModel, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
     glm::mat4 view = camera_->GetViewMatrix();
-
-    // 创建投影矩阵
     glm::mat4 projection = camera_->GetProjectionMatrix(static_cast<float>(width_) / height_);
 
-    // 将视图和投影矩阵传入顶点着色器
     shaderPrograms_[0].SetUniformMat4f("view", glm::value_ptr(view));
     shaderPrograms_[0].SetUniformMat4f("projection", glm::value_ptr(projection));
 
-    std::vector <glm::vec3> cubePositions = {
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(2.0f, 5.0f, -7.0f),
-        glm::vec3(-1.5f, -2.2f, -2.5f),
-        glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3(2.4f, -0.4f, -3.5f),
-        glm::vec3(-1.7f, 3.0f, -7.5f),
-        glm::vec3(1.3f, -2.0f, -2.5f),
-        glm::vec3(1.5f, 2.0f, -2.5f),
-        glm::vec3(1.5f, 0.2f, -1.5f),
-        glm::vec3(-1.3f, 1.0f, -1.5f)
-    };
-    for (int i = 0; i < cubePositions.size(); ++i) {
-        glm::mat4 model = baseModel;
-        if (i > 0) {
-            // 除第一次之外，其它9次均叠加一个平移和旋转
-            model = glm::translate(model, cubePositions[i]);
-            model = glm::rotate(model, glm::radians(i * 10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        }
-
+    for (auto& obj : gameObjects_) {
+        glm::mat4 model = obj.transform.GetModelMatrix();
         shaderPrograms_[0].SetUniformMat4f("model", glm::value_ptr(model));
-        meshes_[0].Draw();
+        obj.mesh->Draw();
     }
 }
 
@@ -312,7 +286,6 @@ void MainWindow::PrepareData()
         0.0f, 1.0f
     };
 
-    // 索引（每个面两个三角形，共12个三角形，36个索引）
     std::vector<unsigned int> eleIndex;
     eleIndex.reserve(36);
     for (unsigned int face = 0; face < 6; ++face) {
@@ -325,19 +298,41 @@ void MainWindow::PrepareData()
         eleIndex.push_back(base + 0);
     }
 
-    Mesh cubeMesh;
-
-    cubeMesh.SetIndexBuffer(eleIndex);
-
-    cubeMesh.AddVertexBuffer(vertices);
+    auto cubeMesh = std::make_shared<Mesh>();
+    cubeMesh->SetIndexBuffer(eleIndex);
+    cubeMesh->AddVertexBuffer(vertices);
     int location = shaderPrograms_[0].GetAttrLocation("aPos");
-    cubeMesh.AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-
-    cubeMesh.AddVertexBuffer(uvs);
+    cubeMesh->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    cubeMesh->AddVertexBuffer(uvs);
     location = shaderPrograms_[0].GetAttrLocation("aUv");
-    cubeMesh.AddVertexAttribute(location, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+    cubeMesh->AddVertexAttribute(location, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 
-    meshes_.push_back(std::move(cubeMesh));
+    std::vector<glm::vec3> cubePositions = {
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(2.0f, 5.0f, -7.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3(2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f, 3.0f, -7.5f),
+        glm::vec3(1.3f, -2.0f, -2.5f),
+        glm::vec3(1.5f, 2.0f, -2.5f),
+        glm::vec3(1.5f, 0.2f, -1.5f),
+        glm::vec3(-1.3f, 1.0f, -1.5f)
+    };
+
+    for (int i = 0; i < cubePositions.size(); ++i) {
+        GameObject obj;
+        obj.mesh = cubeMesh;
+
+        obj.transform.rotation.x = -45.0f;
+        obj.transform.rotation.z = 45.0f;
+        if (i > 0) {
+            obj.transform.position = cubePositions[i];
+            obj.transform.rotation.y = static_cast<float>(i * 10.0f);
+        }
+
+        gameObjects_.push_back(std::move(obj));
+    }
 }
 
 void MainWindow::PrepareShader()

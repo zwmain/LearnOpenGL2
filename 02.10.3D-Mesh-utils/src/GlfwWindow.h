@@ -12,6 +12,13 @@
 #include <Camera.h>
 #include <QuateCamera.h>
 #include <Mesh.h>
+#include <Transform.h>
+#include <memory>
+
+struct GameObject {
+    Transform transform;
+    std::shared_ptr<Mesh> mesh;
+};
 
 // MainWindow 封装了 GLFW 窗口创建、输入处理和基本 OpenGL 渲染流程
 class MainWindow {
@@ -59,7 +66,7 @@ private:
     GLFWwindow* window_ = nullptr; // GLFW 窗口对象指针
     int width_ = 800; // 窗口宽度
     int height_ = 600; // 窗口高度
-    std::vector<Mesh> meshes_; // 存储加载的网格对象
+    std::vector<GameObject> gameObjects_; // 存储游戏对象（包含 Transform 和 Mesh）
     std::vector<Shader> shaderPrograms_; // 存储创建的 Shader Program
     Texture texture_; // 存储创建的纹理对象
     std::unique_ptr<Camera> camera_; // 存储相机对象
