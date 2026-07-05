@@ -60,6 +60,11 @@ MainWindow::MainWindow(const char* title, int width, int height)
 
     // 创建窗口并设置当前 OpenGL 上下文
     window_ = glfwCreateWindow(width_, height_, title, nullptr, nullptr);
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* vidMode = glfwGetVideoMode(primaryMonitor);
+    int xPos = (vidMode->width - width_) / 2;
+    int yPos = (vidMode->height - height_) / 2;
+    glfwSetWindowPos(window_, xPos, yPos);
     glfwMakeContextCurrent(window_);
 
     // 将 this 绑定到 GLFW 窗口，回调中可以访问当前对象
