@@ -155,6 +155,9 @@ void MainWindow::OnFrambufferSize(int width, int height)
 
 void MainWindow::OnKey(int key, int scanmode, int action, int mods)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureKeyboard)
+        return;
     // 构造 KeyCombo 并分发给注册的处理器
     KeyCombo combo { key, mods };
     auto it = handlers_.find(combo);
@@ -168,6 +171,9 @@ void MainWindow::OnKey(int key, int scanmode, int action, int mods)
 
 void MainWindow::OnMouseMove(double xpos, double ypos)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse)
+        return; // ImGui 正在使用鼠标，忽略给应用的处理
     if (!isFocus_) {
         return;
     }
@@ -186,6 +192,9 @@ void MainWindow::OnMouseMove(double xpos, double ypos)
 
 void MainWindow::OnMouseScroll(double xoffset, double yoffset)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse)
+        return;
     if (!isFocus_) {
         return;
     }
@@ -196,6 +205,9 @@ void MainWindow::OnMouseScroll(double xoffset, double yoffset)
 
 void MainWindow::OnMouseClick(int button, int action, int mods)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse)
+        return;
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         isFocus_ = true;  // 获取焦点
         isFirstMouse_ = true; // 重置鼠标首次移动标志
