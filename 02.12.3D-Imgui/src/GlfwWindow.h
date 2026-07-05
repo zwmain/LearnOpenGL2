@@ -15,6 +15,9 @@
 #include <Transform.h>
 #include <Scene.h>
 #include <memory>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 // MainWindow 封装了 GLFW 窗口创建、输入处理和基本 OpenGL 渲染流程
 class MainWindow {
@@ -51,6 +54,14 @@ private:
     void PrepareTexture();
     // 使用 Scene 容器替代 GameObject
     void PrepareScene();
+    // 初始化imgui
+    void InitImgui();
+    // 销毁Imgui
+    void DestroyImgui();
+    // 在render之前的逻辑
+    void BeforeRender();
+    // 在render之后的逻辑
+    void AfterRender();
 
     void OnCtrlP(int key, int action, int mods);
     void OnCtrlR(int key, int action, int mods);
@@ -75,6 +86,7 @@ private:
     float lastY_ = height_ / 2.0f; // 鼠标上一次的 y 坐标
     bool isFirstMouse_ = true; // 是否是第一次鼠标移动事件，用于初始化 lastX_ 和 lastY_
     bool isFocus_ = false; // 窗口是否处于焦点状态
+    ImGuiContext* imguiContext_ = nullptr; // ImGui 上下文指针
 
     // 可扩展的按键处理器支持
     struct KeyCombo {

@@ -96,10 +96,13 @@ MainWindow::MainWindow(const char* title, int width, int height)
         std::bind(&MainWindow::OnD, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     RegisterKeyHandler(GLFW_KEY_ESCAPE, 0,
         std::bind(&MainWindow::OnEscape, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+    InitImgui();
 }
 
 MainWindow::~MainWindow()
 {
+    DestroyImgui();
     // 关闭 GLFW 并释放其内部资源
     glfwTerminate();
     window_ = nullptr;
@@ -131,8 +134,13 @@ void MainWindow::Run()
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
 
+        BeforeRender();
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        Render();
+        Render(); // opengl图形渲染
+
+        AfterRender();
+
         glfwSwapBuffers(window_);
     }
 }
@@ -356,6 +364,89 @@ void MainWindow::PrepareScene()
         scene.SetTransform(transform);
 
         scenes_.push_back(std::move(scene));
+    }
+}
+
+void MainWindow::InitImgui()
+{
+    // 创建上下文
+    IMGUI_CHECKVERSION();
+    imguiContext_ = ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+
+    // 开启 Docking 和 多视口支持
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // 启用键盘控制
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // 启用 Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // 启用多视口（允许窗口拖出主窗口）
+    // 设置主题
+    ImGui::StyleColorsDark();
+
+    // 绑定 GLFW 和 OpenGL 后端
+    ImGui_ImplGlfw_InitForOpenGL(window_, true);
+    ImGui_ImplOpenGL3_Init("#version 460"); // 根据你的 OpenGL 版本调整
+}
+
+void MainWindow::DestroyImgui()
+{
+    // 1. 清理并销毁 ImGui 的 OpenGL 3 渲染后端
+    ImGui_ImplOpenGL3_Shutdown();
+
+    // 2. 清理并销毁 ImGui 的 GLFW 输入后端
+    ImGui_ImplGlfw_Shutdown();
+
+    // 3. 销毁 ImGui 的主上下文
+    ImGui::DestroyContext(imguiContext_);
+
+    imguiContext_ = nullptr;
+}
+
+void MainWindow::BeforeRender()
+{
+    // 1. 开始 ImGui 的新帧 (必须在处理输入事件后，绘制任何东西之前调用)
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // 2. ImGui UI 逻辑 (可以放在自定义 Render 之前或之后，但通常放在这里)
+    {
+        // 创建覆盖整个主视口的 DockSpace (这是实现停靠功能的核心)
+        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+
+        // 创建您的参数面板窗口
+        static float paramValue = 0.5f;
+        static int intParam = 10;
+        static bool boolParam = true;
+
+        ImGui::Begin("Parameters");
+        ImGui::Text("Modify params:");
+        ImGui::SliderFloat("Float param", &paramValue, 0.0f, 1.0f);
+        ImGui::SliderInt("int param", &intParam, 0, 100);
+        ImGui::Checkbox("bool param", &boolParam);
+
+        if (ImGui::Button("Reset param")) {
+            paramValue = 0.5f;
+            intParam = 10;
+        }
+        ImGui::End();
+
+        // 这里可以创建其他 ImGui 窗口...
+    }
+}
+
+void MainWindow::AfterRender()
+{
+    // 4. 渲染 ImGui (必须在您自己的渲染之后，交换缓冲区之前)
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    // 5. 处理多视口 (如果开启了 ImGuiConfigFlags_ViewportsEnable)
+    //    必须在 ImGui::Render() 之后调用
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+        GLFWwindow* backup_current_context = glfwGetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        glfwMakeContextCurrent(backup_current_context);
     }
 }
 
