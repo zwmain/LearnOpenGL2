@@ -5,7 +5,7 @@ file(GLOB HEADERS "src/*.h")
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC glad glfw utils glm-header-only)
+target_link_libraries(${PROJECT_NAME} PUBLIC glad glfw utils glm-header-only imgui)
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_include_directories(${PROJECT_NAME} PUBLIC "${STB_DIR}")
 
