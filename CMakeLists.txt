@@ -16,6 +16,7 @@ set(STB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/00.3rd/stb")
 add_subdirectory("00.3rd/glad")
 add_subdirectory("00.3rd/glfw")
 add_subdirectory("00.3rd/glm")
+add_subdirectory("00.3rd/imgui-cmake")
 
 add_subdirectory("00.utils")
 
@@ -47,3 +48,4 @@ add_subdirectory("02.08.3D-camera-utils")
 add_subdirectory("02.09.3D-camera-quat")
 add_subdirectory("02.10.3D-Mesh-utils")
 add_subdirectory("02.11.3D-Scene")
+add_subdirectory("02.12.3D-Imgui")
