@@ -409,8 +409,28 @@ void MainWindow::BeforeRender()
 
     // 2. ImGui UI 逻辑 (可以放在自定义 Render 之前或之后，但通常放在这里)
     {
-        // 创建覆盖整个主视口的 DockSpace (这是实现停靠功能的核心)
-        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
+        ImGuiViewport* vp = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(vp->WorkPos);
+        ImGui::SetNextWindowSize(vp->WorkSize);
+        ImGui::SetNextWindowViewport(vp->ID);
+
+        ImGuiWindowFlags host_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse
+            | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
+            | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+        // 让宿主窗口完全透明，去掉边框圆角和边框宽度
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0)); // 关键：透明背景
+
+        ImGui::Begin("DockHost", nullptr, host_flags);
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor();
+
+        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+        ImGui::DockSpace(dockspace_id, ImVec2(0, 0), ImGuiDockNodeFlags_PassthruCentralNode);
+
+        ImGui::End();
 
         // 创建您的参数面板窗口
         static float paramValue = 0.5f;
