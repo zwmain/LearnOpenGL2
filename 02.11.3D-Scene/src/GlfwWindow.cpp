@@ -331,12 +331,28 @@ void MainWindow::PrepareScene()
         glm::vec3(-1.3f, 1.0f, -1.5f)
     };
 
+    auto uniformSetter = [](RenderContext& context, float aspectRatio) {
+        auto texture = context.GetTexture();
+        auto shader = context.GetShader();
+        auto transform = context.GetTransform();
+        auto camera = context.GetCamera();
+
+        shader->SetUniform1i("sampler", static_cast<int>(texture->GetTextureUnit()));
+        glm::mat4 model = transform->GetModelMatrix();
+        shader->SetUniformMat4f("model", glm::value_ptr(model));
+        glm::mat4 view = camera->GetViewMatrix();
+        glm::mat4 projection = camera->GetProjectionMatrix(aspectRatio);
+        shader->SetUniformMat4f("view", glm::value_ptr(view));
+        shader->SetUniformMat4f("projection", glm::value_ptr(projection));
+    };
+
     for (int i = 0; i < cubePositions.size(); ++i) {
         RenderContext scene;
         scene.SetMesh(mesh_);
         scene.SetCamera(camera_);
         scene.SetShader(shader_);
         scene.SetTexture(texture_);
+        scene.SetUniformSetter(uniformSetter);
 
         auto transform = std::make_shared<Transform>();
         transform->SetRotation(glm::vec3(-45.0f, 0.0f, 45.0f));

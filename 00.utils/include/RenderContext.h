@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <functional>
 
 #include "Camera.h"
 #include "Mesh.h"
@@ -17,6 +18,7 @@ public:
     void SetShader(const std::shared_ptr<Shader>& shader) { shader_ = shader; }
     void SetTexture(const std::shared_ptr<Texture>& texture) { texture_ = texture; }
     void SetTransform(const std::shared_ptr<Transform>& transform) { transform_ = transform; }
+    void SetUniformSetter(const std::function<void(RenderContext&, float)>& setter) { uniformSetter_ = setter; }
 
     const std::shared_ptr<Mesh>& GetMesh() const { return mesh_; }
     const std::shared_ptr<Camera>& GetCamera() const { return camera_; }
@@ -41,4 +43,5 @@ private:
     std::shared_ptr<Shader> shader_;
     std::shared_ptr<Texture> texture_;
     std::shared_ptr<Transform> transform_;
+    std::function<void(RenderContext&, float)> uniformSetter_;
 };
