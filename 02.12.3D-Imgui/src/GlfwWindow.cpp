@@ -361,7 +361,7 @@ void MainWindow::PrepareScene()
     };
 
     for (int i = 0; i < cubePositions.size(); ++i) {
-        Scene scene;
+        RenderContext scene;
         scene.SetMesh(mesh_);
         scene.SetCamera(camera_);
         scene.SetShader(shader_);

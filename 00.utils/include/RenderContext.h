@@ -8,9 +8,9 @@
 #include "Texture.h"
 #include "Transform.h"
 
-class Scene {
+class RenderContext {
 public:
-    Scene() = default;
+    RenderContext() = default;
 
     void SetMesh(const std::shared_ptr<Mesh>& mesh) { mesh_ = mesh; }
     void SetCamera(const std::shared_ptr<Camera>& camera) { camera_ = camera; }

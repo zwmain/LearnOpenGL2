@@ -1,8 +1,8 @@
-#include "Scene.h"
+#include "RenderContext.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
-void Scene::Render(float aspectRatio)
+void RenderContext::Render(float aspectRatio)
 {
     if (shader_) {
         shader_->UseProgram();
