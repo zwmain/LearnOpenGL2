@@ -269,40 +269,6 @@ void MainWindow::PrepareData()
         -0.5f, -0.5f,  0.5f
     };
 
-    // 每个面独立的 UV（相同的四个角）
-    std::vector<float> uvs = {
-        // Front
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Back
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Left
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Right
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Top
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Bottom
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f
-    };
-
     std::vector<unsigned int> eleIndex;
     eleIndex.reserve(36);
     for (unsigned int face = 0; face < 6; ++face) {
@@ -320,9 +286,6 @@ void MainWindow::PrepareData()
     mesh_->AddVertexBuffer(vertices);
     int location = shader_->GetAttrLocation("aPos");
     mesh_->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    mesh_->AddVertexBuffer(uvs);
-    location = shader_->GetAttrLocation("aUv");
-    mesh_->AddVertexAttribute(location, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 }
 
 void MainWindow::PrepareShader()
