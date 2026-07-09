@@ -281,11 +281,19 @@ void MainWindow::PrepareData()
         eleIndex.push_back(base + 0);
     }
 
-    mesh_ = std::make_shared<Mesh>();
-    mesh_->SetIndexBuffer(eleIndex);
-    mesh_->AddVertexBuffer(vertices);
-    int location = shader_->GetAttrLocation("aPos");
-    mesh_->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    auto cubeMesh = std::make_shared<Mesh>();
+    cubeMesh->SetIndexBuffer(eleIndex);
+    cubeMesh->AddVertexBuffer(vertices);
+    int location = shader_["cube"]->GetAttrLocation("aPos");
+    cubeMesh->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    mesh_["cube"] = cubeMesh;
+
+    auto lampMesh = std::make_shared<Mesh>();
+    lampMesh->SetIndexBuffer(eleIndex);
+    lampMesh->AddVertexBuffer(vertices);
+    location = shader_["lamp"]->GetAttrLocation("aPos");
+    lampMesh->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    mesh_["lamp"] = lampMesh;
 }
 
 void MainWindow::PrepareShader()
@@ -294,10 +302,15 @@ void MainWindow::PrepareShader()
     std::string currentDir = fs::current_path().string();
 
     // 使用绝对路径（相对于 exe 所在目录的 assets 文件夹）
-    std::string vertexPath = currentDir + R"(/assets/shader/vertex/vertex.glsl)";
-    std::string fragmentPath = currentDir + R"(/assets/shader/fragment/fragment.glsl)";
+    std::string vertexPath = currentDir + R"(/assets/shader/vertex/CubeVertex.glsl)";
+    std::string fragmentPath = currentDir + R"(/assets/shader/fragment/CubeFragment.glsl)";
+    auto cubeShader = std::make_shared<Shader>(vertexPath, fragmentPath);
+    shader_["cube"] = cubeShader;
 
-    shader_ = std::make_shared<Shader>(vertexPath, fragmentPath);
+    vertexPath = currentDir + R"(/assets/shader/vertex/LampVertex.glsl)";
+    fragmentPath = currentDir + R"(/assets/shader/fragment/LampFragment.glsl)";
+    auto lampShader = std::make_shared<Shader>(vertexPath, fragmentPath);
+    shader_["lamp"] = lampShader;
 }
 
 void MainWindow::PrepareTexture()
@@ -323,28 +336,27 @@ void MainWindow::PrepareScene()
         //glm::vec3(-1.3f, 1.0f, -1.5f)
     };
 
-    auto uniformSetter = [](RenderContext& context, float aspectRatio) {
-        auto texture = context.GetTexture();
+    auto uniformSetter = [this](RenderContext& context, float aspectRatio) {
         auto shader = context.GetShader();
         auto transform = context.GetTransform();
         auto camera = context.GetCamera();
 
-        shader->SetUniform1i("sampler", static_cast<int>(texture->GetTextureUnit()));
         glm::mat4 model = transform->GetModelMatrix();
         shader->SetUniformMat4f("model", glm::value_ptr(model));
         glm::mat4 view = camera->GetViewMatrix();
         glm::mat4 projection = camera->GetProjectionMatrix(aspectRatio);
         shader->SetUniformMat4f("view", glm::value_ptr(view));
         shader->SetUniformMat4f("projection", glm::value_ptr(projection));
+        shader->SetUniformVec3f("lightColor", glm::value_ptr(lightColor_));
+        shader->SetUniformVec3f("objectColor", glm::value_ptr(objectColor_));
     };
 
     for (int i = 0; i < cubePositions.size(); ++i) {
-        RenderContext scene;
-        scene.SetMesh(mesh_);
-        scene.SetCamera(camera_);
-        scene.SetShader(shader_);
-        scene.SetTexture(texture_);
-        scene.SetUniformSetter(uniformSetter);
+        RenderContext ctx;
+        ctx.SetMesh(mesh_["cube"]);
+        ctx.SetCamera(camera_);
+        ctx.SetShader(shader_["cube"]);
+        ctx.SetUniformSetter(uniformSetter);
 
         auto transform = std::make_shared<Transform>();
         transform->SetPosition(cubePositions[i]);
@@ -352,9 +364,37 @@ void MainWindow::PrepareScene()
         if (i > 0) {
             transform->Rotate(glm::vec3(0.0f, i * 10.0f, 0.0f));
         }
-        scene.SetTransform(transform);
+        ctx.SetTransform(transform);
 
-        scenes_.push_back(std::move(scene));
+        scenes_.push_back(std::move(ctx));
+    }
+
+    {
+        auto lampUniformSetter = [this](RenderContext& context, float aspectRatio) {
+            auto shader = context.GetShader();
+            auto transform = context.GetTransform();
+            auto camera = context.GetCamera();
+
+            glm::mat4 model = transform->GetModelMatrix();
+            shader->SetUniformMat4f("model", glm::value_ptr(model));
+            glm::mat4 view = camera->GetViewMatrix();
+            glm::mat4 projection = camera->GetProjectionMatrix(aspectRatio);
+            shader->SetUniformMat4f("view", glm::value_ptr(view));
+            shader->SetUniformMat4f("projection", glm::value_ptr(projection));
+            shader->SetUniformVec3f("lightColor", glm::value_ptr(lightColor_));
+        };
+        RenderContext ctx;
+        ctx.SetMesh(mesh_["lamp"]);
+        ctx.SetCamera(camera_);
+        ctx.SetShader(shader_["lamp"]);
+        ctx.SetUniformSetter(lampUniformSetter);
+
+        auto transform = std::make_shared<Transform>();
+        transform->SetPosition({ 1.2, 1.1, 1.2});
+        transform->SetScale({ 0.2, 0.2, 0.2 });
+        ctx.SetTransform(transform);
+
+        scenes_.push_back(std::move(ctx));
     }
 }
 

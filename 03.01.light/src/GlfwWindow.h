@@ -18,6 +18,7 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <map>
 
 // MainWindow 封装了 GLFW 窗口创建、输入处理和基本 OpenGL 渲染流程
 class MainWindow {
@@ -76,9 +77,9 @@ private:
     int width_ = 800; // 窗口宽度
     int height_ = 600; // 窗口高度
     std::vector<RenderContext> scenes_; // 使用 RenderContext 替代 GameObject
-    std::shared_ptr<Mesh> mesh_; // 共享网格资源
+    std::map<std::string, std::shared_ptr<Mesh>> mesh_; // 共享网格资源
     std::shared_ptr<Camera> camera_; // 共享相机资源
-    std::shared_ptr<Shader> shader_; // 共享着色器资源
+    std::map<std::string, std::shared_ptr<Shader>> shader_; // 共享着色器资源
     std::shared_ptr<Texture> texture_; // 共享纹理资源
     float deltaTime_ = 0.0f; // 当前帧与上一帧的时间差
     float lastFrameTime_ = 0.0f; // 上一帧的时间戳
@@ -87,6 +88,9 @@ private:
     bool isFirstMouse_ = true; // 是否是第一次鼠标移动事件，用于初始化 lastX_ 和 lastY_
     bool isFocus_ = false; // 窗口是否处于焦点状态
     ImGuiContext* imguiContext_ = nullptr; // ImGui 上下文指针
+
+    glm::vec3 lightColor_ = glm::vec3(1.0f, 1.0f, 1.0f); // 光源颜色
+    glm::vec3 objectColor_ = glm::vec3(1.0f, 0.5f, 0.31f); // 物体颜色
 
     // 可扩展的按键处理器支持
     struct KeyCombo {

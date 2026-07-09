@@ -21,6 +21,7 @@ public:
     void SetUniform1f(const std::string& name, float value) const;
     void SetUniform1i(const std::string& name, int value) const;
     void SetUniformMat4f(const std::string& name, const float* value) const;
+    void SetUniformVec3f(const std::string& name, const float* value) const;
 
 private:
     unsigned int programId_ {};
