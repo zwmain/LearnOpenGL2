@@ -49,3 +49,6 @@ add_subdirectory("02.09.3D-camera-quat")
 add_subdirectory("02.10.3D-Mesh-utils")
 add_subdirectory("02.11.3D-Scene")
 add_subdirectory("02.12.3D-Imgui")
+
+add_subdirectory("03.01.light")
+

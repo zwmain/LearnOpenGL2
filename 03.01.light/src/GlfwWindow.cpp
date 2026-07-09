@@ -60,13 +60,22 @@ MainWindow::MainWindow(const char* title, int width, int height)
 
     // 创建窗口并设置当前 OpenGL 上下文
     window_ = glfwCreateWindow(width_, height_, title, nullptr, nullptr);
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* vidMode = glfwGetVideoMode(primaryMonitor);
+    int xPos = (vidMode->width - width_) / 2;
+    int yPos = (vidMode->height - height_) / 2;
+    glfwSetWindowPos(window_, xPos, yPos);
     glfwMakeContextCurrent(window_);
 
     // 将 this 绑定到 GLFW 窗口，回调中可以访问当前对象
     glfwSetWindowUserPointer(window_, this);
     glfwSetFramebufferSizeCallback(window_, FrameBufferSizeCallback);
     glfwSetKeyCallback(window_, KeyCallBack);
-    glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (isFocus_) {
+        glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    } else {
+        glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
     glfwSetCursorPosCallback(window_, MouseCallBack);
     glfwSetScrollCallback(window_, MouseScrollCallBack);
     glfwSetMouseButtonCallback(window_, MouseButtonCallback);
@@ -87,10 +96,13 @@ MainWindow::MainWindow(const char* title, int width, int height)
         std::bind(&MainWindow::OnD, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     RegisterKeyHandler(GLFW_KEY_ESCAPE, 0,
         std::bind(&MainWindow::OnEscape, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+    InitImgui();
 }
 
 MainWindow::~MainWindow()
 {
+    DestroyImgui();
     // 关闭 GLFW 并释放其内部资源
     glfwTerminate();
     window_ = nullptr;
@@ -122,8 +134,13 @@ void MainWindow::Run()
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
 
+        BeforeRender();
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        Render();
+        Render(); // opengl图形渲染
+
+        AfterRender();
+
         glfwSwapBuffers(window_);
     }
 }
@@ -138,6 +155,9 @@ void MainWindow::OnFrambufferSize(int width, int height)
 
 void MainWindow::OnKey(int key, int scanmode, int action, int mods)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureKeyboard)
+        return;
     // 构造 KeyCombo 并分发给注册的处理器
     KeyCombo combo { key, mods };
     auto it = handlers_.find(combo);
@@ -151,6 +171,9 @@ void MainWindow::OnKey(int key, int scanmode, int action, int mods)
 
 void MainWindow::OnMouseMove(double xpos, double ypos)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse)
+        return; // ImGui 正在使用鼠标，忽略给应用的处理
     if (!isFocus_) {
         return;
     }
@@ -169,6 +192,9 @@ void MainWindow::OnMouseMove(double xpos, double ypos)
 
 void MainWindow::OnMouseScroll(double xoffset, double yoffset)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse)
+        return;
     if (!isFocus_) {
         return;
     }
@@ -179,6 +205,9 @@ void MainWindow::OnMouseScroll(double xoffset, double yoffset)
 
 void MainWindow::OnMouseClick(int button, int action, int mods)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse)
+        return;
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         isFocus_ = true;  // 获取焦点
         isFirstMouse_ = true; // 重置鼠标首次移动标志
@@ -240,40 +269,6 @@ void MainWindow::PrepareData()
         -0.5f, -0.5f,  0.5f
     };
 
-    // 每个面独立的 UV（相同的四个角）
-    std::vector<float> uvs = {
-        // Front
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Back
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Left
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Right
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Top
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-        // Bottom
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f
-    };
-
     std::vector<unsigned int> eleIndex;
     eleIndex.reserve(36);
     for (unsigned int face = 0; face < 6; ++face) {
@@ -291,9 +286,6 @@ void MainWindow::PrepareData()
     mesh_->AddVertexBuffer(vertices);
     int location = shader_->GetAttrLocation("aPos");
     mesh_->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    mesh_->AddVertexBuffer(uvs);
-    location = shader_->GetAttrLocation("aUv");
-    mesh_->AddVertexAttribute(location, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 }
 
 void MainWindow::PrepareShader()
@@ -320,15 +312,15 @@ void MainWindow::PrepareScene()
 
     std::vector<glm::vec3> cubePositions = {
         glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(2.0f, 5.0f, -7.0f),
-        glm::vec3(-1.5f, -2.2f, -2.5f),
-        glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3(2.4f, -0.4f, -3.5f),
-        glm::vec3(-1.7f, 3.0f, -7.5f),
-        glm::vec3(1.3f, -2.0f, -2.5f),
-        glm::vec3(1.5f, 2.0f, -2.5f),
-        glm::vec3(1.5f, 0.2f, -1.5f),
-        glm::vec3(-1.3f, 1.0f, -1.5f)
+        //glm::vec3(2.0f, 5.0f, -7.0f),
+        //glm::vec3(-1.5f, -2.2f, -2.5f),
+        //glm::vec3(-3.8f, -2.0f, -12.3f),
+        //glm::vec3(2.4f, -0.4f, -3.5f),
+        //glm::vec3(-1.7f, 3.0f, -7.5f),
+        //glm::vec3(1.3f, -2.0f, -2.5f),
+        //glm::vec3(1.5f, 2.0f, -2.5f),
+        //glm::vec3(1.5f, 0.2f, -1.5f),
+        //glm::vec3(-1.3f, 1.0f, -1.5f)
     };
 
     auto uniformSetter = [](RenderContext& context, float aspectRatio) {
@@ -355,14 +347,117 @@ void MainWindow::PrepareScene()
         scene.SetUniformSetter(uniformSetter);
 
         auto transform = std::make_shared<Transform>();
+        transform->SetPosition(cubePositions[i]);
         transform->SetRotation(glm::vec3(-45.0f, 0.0f, 45.0f));
         if (i > 0) {
-            transform->SetPosition(cubePositions[i]);
             transform->Rotate(glm::vec3(0.0f, i * 10.0f, 0.0f));
         }
         scene.SetTransform(transform);
 
         scenes_.push_back(std::move(scene));
+    }
+}
+
+void MainWindow::InitImgui()
+{
+    // 创建上下文
+    IMGUI_CHECKVERSION();
+    imguiContext_ = ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+
+    // 开启 Docking 和 多视口支持
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // 启用键盘控制
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // 启用 Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // 启用多视口（允许窗口拖出主窗口）
+    // 设置主题
+    ImGui::StyleColorsDark();
+
+    // 绑定 GLFW 和 OpenGL 后端
+    ImGui_ImplGlfw_InitForOpenGL(window_, true);
+    ImGui_ImplOpenGL3_Init("#version 460"); // 根据你的 OpenGL 版本调整
+}
+
+void MainWindow::DestroyImgui()
+{
+    // 1. 清理并销毁 ImGui 的 OpenGL 3 渲染后端
+    ImGui_ImplOpenGL3_Shutdown();
+
+    // 2. 清理并销毁 ImGui 的 GLFW 输入后端
+    ImGui_ImplGlfw_Shutdown();
+
+    // 3. 销毁 ImGui 的主上下文
+    ImGui::DestroyContext(imguiContext_);
+
+    imguiContext_ = nullptr;
+}
+
+void MainWindow::BeforeRender()
+{
+    // 1. 开始 ImGui 的新帧 (必须在处理输入事件后，绘制任何东西之前调用)
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // 2. ImGui UI 逻辑 (可以放在自定义 Render 之前或之后，但通常放在这里)
+    {
+        ImGuiViewport* vp = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(vp->WorkPos);
+        ImGui::SetNextWindowSize(vp->WorkSize);
+        ImGui::SetNextWindowViewport(vp->ID);
+
+        ImGuiWindowFlags host_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse
+            | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
+            | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+        // 让宿主窗口完全透明，去掉边框圆角和边框宽度
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0)); // 关键：透明背景
+
+        ImGui::Begin("DockHost", nullptr, host_flags);
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor();
+
+        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+        ImGui::DockSpace(dockspace_id, ImVec2(0, 0), ImGuiDockNodeFlags_PassthruCentralNode);
+
+        ImGui::End();
+
+        // 创建您的参数面板窗口
+        static float paramValue = 0.5f;
+        static int intParam = 10;
+        static bool boolParam = true;
+
+        ImGui::Begin("Parameters");
+        ImGui::Text("Modify params:");
+        ImGui::SliderFloat("Float param", &paramValue, 0.0f, 1.0f);
+        ImGui::SliderInt("int param", &intParam, 0, 100);
+        ImGui::Checkbox("bool param", &boolParam);
+
+        if (ImGui::Button("Reset param")) {
+            paramValue = 0.5f;
+            intParam = 10;
+        }
+        ImGui::End();
+
+        // 这里可以创建其他 ImGui 窗口...
+    }
+}
+
+void MainWindow::AfterRender()
+{
+    // 4. 渲染 ImGui (必须在您自己的渲染之后，交换缓冲区之前)
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    // 5. 处理多视口 (如果开启了 ImGuiConfigFlags_ViewportsEnable)
+    //    必须在 ImGui::Render() 之后调用
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+        GLFWwindow* backup_current_context = glfwGetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        glfwMakeContextCurrent(backup_current_context);
     }
 }
 

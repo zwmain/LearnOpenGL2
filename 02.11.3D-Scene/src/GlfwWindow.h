@@ -13,7 +13,7 @@
 #include <QuateCamera.h>
 #include <Mesh.h>
 #include <Transform.h>
-#include <Scene.h>
+#include <RenderContext.h>
 #include <memory>
 
 // MainWindow 封装了 GLFW 窗口创建、输入处理和基本 OpenGL 渲染流程
@@ -49,7 +49,7 @@ private:
     void PrepareShader();
     // 创建纹理
     void PrepareTexture();
-    // 使用 Scene 容器替代 GameObject
+    // 使用 RenderContext 容器替代 GameObject
     void PrepareScene();
 
     void OnCtrlP(int key, int action, int mods);
@@ -64,7 +64,7 @@ private:
     GLFWwindow* window_ = nullptr; // GLFW 窗口对象指针
     int width_ = 800; // 窗口宽度
     int height_ = 600; // 窗口高度
-    std::vector<Scene> scenes_; // 使用 Scene 替代 GameObject
+    std::vector<RenderContext> scenes_; // 使用 RenderContext 替代 GameObject
     std::shared_ptr<Mesh> mesh_; // 共享网格资源
     std::shared_ptr<Camera> camera_; // 共享相机资源
     std::shared_ptr<Shader> shader_; // 共享着色器资源
