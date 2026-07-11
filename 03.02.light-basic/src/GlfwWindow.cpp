@@ -94,6 +94,10 @@ MainWindow::MainWindow(const char* title, int width, int height)
         std::bind(&MainWindow::OnS, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     RegisterKeyHandler(GLFW_KEY_D, 0,
         std::bind(&MainWindow::OnD, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    RegisterKeyHandler(GLFW_KEY_UP, 0,
+        std::bind(&MainWindow::OnUp, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    RegisterKeyHandler(GLFW_KEY_DOWN, 0,
+        std::bind(&MainWindow::OnDown, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     RegisterKeyHandler(GLFW_KEY_ESCAPE, 0,
         std::bind(&MainWindow::OnEscape, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
@@ -339,8 +343,8 @@ void MainWindow::PrepareShader()
 
 void MainWindow::PrepareTexture()
 {
-    texture_ = std::make_shared<Texture>();
-    texture_->LoadFromFile("assets/image/gugugaga.jpeg", 0);
+    //texture_ = std::make_shared<Texture>();
+    //texture_->LoadFromFile("assets/image/gugugaga.jpeg", 0);
 }
 
 void MainWindow::PrepareScene()
@@ -377,6 +381,7 @@ void MainWindow::PrepareScene()
         shader->SetUniformVec3f("lightPos", glm::value_ptr(lightPos_));
         shader->SetUniformVec3f("viewPos", glm::value_ptr(camera_->GetPosition()));
         shader->SetUniform1f("specularStrength", specularStrength_);
+        shader->SetUniform1i("shininess", shininess_);
     };
 
     for (int i = 0; i < cubePositions.size(); ++i) {
@@ -526,9 +531,23 @@ void MainWindow::BeforeRender()
 
         // Ambient Strength 调节
         {
-            static float ambientStrength = 0.1f;
+            static float ambientStrength = ambientStrength_;
             ImGui::SliderFloat("Ambient Strength", &ambientStrength, 0.0f, 1.0f);
             ambientStrength_ = ambientStrength;
+        }
+
+        // Sepcular Strength 调节
+        {
+            static float specularStrength = specularStrength_;
+            ImGui::SliderFloat("Sepcular Strength", &specularStrength, 0.0f, 1.0f);
+            specularStrength_ = specularStrength;
+        }
+
+        // Shininess 调节
+        {
+            static int shininess = shininess_;
+            ImGui::SliderInt("Shininess", &shininess, 2, 256);
+            shininess_ = shininess;
         }
 
         ImGui::End();
@@ -592,6 +611,20 @@ void MainWindow::OnD(int key, int action, int mods)
 {
     if (action == GLFW_REPEAT) {
         camera_->ProcessKeyboard(CameraDirection::RIGHT, deltaTime_);
+    }
+}
+
+void MainWindow::OnUp(int key, int action, int mods)
+{
+    if (action == GLFW_REPEAT) {
+        camera_->ProcessKeyboard(CameraDirection::UP, deltaTime_);
+    }
+}
+
+void MainWindow::OnDown(int key, int action, int mods)
+{
+    if (action == GLFW_REPEAT) {
+        camera_->ProcessKeyboard(CameraDirection::DOWN, deltaTime_);
     }
 }
 
