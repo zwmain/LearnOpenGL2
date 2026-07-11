@@ -52,4 +52,5 @@ add_subdirectory("02.12.3D-Imgui")
 
 add_subdirectory("03.01.light")
 add_subdirectory("03.02.light-basic")
+add_subdirectory("03.03.light-material")
 
