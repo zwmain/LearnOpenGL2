@@ -91,6 +91,7 @@ private:
 
     glm::vec3 lightColor_ = glm::vec3(1.0f, 1.0f, 1.0f); // 光源颜色
     glm::vec3 objectColor_ = glm::vec3(1.0f, 0.5f, 0.31f); // 物体颜色
+    float ambientStrength_ = 0.1; // 环境光强度
 
     // 可扩展的按键处理器支持
     struct KeyCombo {

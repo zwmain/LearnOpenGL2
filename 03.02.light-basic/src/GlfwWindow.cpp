@@ -349,6 +349,7 @@ void MainWindow::PrepareScene()
         shader->SetUniformMat4f("projection", glm::value_ptr(projection));
         shader->SetUniformVec3f("lightColor", glm::value_ptr(lightColor_));
         shader->SetUniformVec3f("objectColor", glm::value_ptr(objectColor_));
+        shader->SetUniform1f("ambientStrength", ambientStrength_);
     };
 
     for (int i = 0; i < cubePositions.size(); ++i) {
@@ -494,6 +495,13 @@ void MainWindow::BeforeRender()
             objectColor_[0] = 1.0f;
             objectColor_[1] = 0.5f;
             objectColor_[2] = 0.31f;
+        }
+
+        // Ambient Strength 调节
+        {
+            static float ambientStrength = 0.1f;
+            ImGui::SliderFloat("Ambient Strength", &ambientStrength, 0.0f, 1.0f);
+            ambientStrength_ = ambientStrength;
         }
 
         ImGui::End();
