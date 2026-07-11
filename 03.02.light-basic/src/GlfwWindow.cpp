@@ -375,6 +375,8 @@ void MainWindow::PrepareScene()
         shader->SetUniformVec3f("objectColor", glm::value_ptr(objectColor_));
         shader->SetUniform1f("ambientStrength", ambientStrength_);
         shader->SetUniformVec3f("lightPos", glm::value_ptr(lightPos_));
+        shader->SetUniformVec3f("viewPos", glm::value_ptr(camera_->GetPosition()));
+        shader->SetUniform1f("specularStrength", specularStrength_);
     };
 
     for (int i = 0; i < cubePositions.size(); ++i) {
