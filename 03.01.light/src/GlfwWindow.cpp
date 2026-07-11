@@ -462,22 +462,40 @@ void MainWindow::BeforeRender()
         ImGui::DockSpace(dockspace_id, ImVec2(0, 0), ImGuiDockNodeFlags_PassthruCentralNode);
 
         ImGui::End();
+    }
 
-        // 创建您的参数面板窗口
-        static float paramValue = 0.5f;
-        static int intParam = 10;
-        static bool boolParam = true;
+    // Create gui component
+    {
 
         ImGui::Begin("Parameters");
         ImGui::Text("Modify params:");
-        ImGui::SliderFloat("Float param", &paramValue, 0.0f, 1.0f);
-        ImGui::SliderInt("int param", &intParam, 0, 100);
-        ImGui::Checkbox("bool param", &boolParam);
 
-        if (ImGui::Button("Reset param")) {
-            paramValue = 0.5f;
-            intParam = 10;
+        // 光源颜色 (Light Color)
+        static float lightColor[3] = { 1.0f, 1.0f, 1.0f };
+        if (ImGui::ColorEdit3("Light Color", lightColor, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_AlphaBar)) {
+            lightColor_[0] = static_cast<float>(lightColor[0]);
+            lightColor_[1] = static_cast<float>(lightColor[1]);
+            lightColor_[2] = static_cast<float>(lightColor[2]);
         }
+
+        // 物体颜色 (Object Color)
+        static float objectColor[3] = { 1.0f, 0.5f, 0.31f };
+        if (ImGui::ColorEdit3("Object Color", objectColor, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_AlphaBar)) {
+            objectColor_[0] = static_cast<float>(objectColor[0]);
+            objectColor_[1] = static_cast<float>(objectColor[1]);
+            objectColor_[2] = static_cast<float>(objectColor[2]);
+        }
+
+        // 重置按钮
+        if (ImGui::Button("Reset Colors")) {
+            lightColor_[0] = 1.0f;
+            lightColor_[1] = 1.0f;
+            lightColor_[2] = 1.0f;
+            objectColor_[0] = 1.0f;
+            objectColor_[1] = 0.5f;
+            objectColor_[2] = 0.31f;
+        }
+
         ImGui::End();
 
         // 这里可以创建其他 ImGui 窗口...
