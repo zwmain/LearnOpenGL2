@@ -70,6 +70,8 @@ private:
     void OnA(int key, int action, int mods);
     void OnS(int key, int action, int mods);
     void OnD(int key, int action, int mods);
+    void OnUp(int key, int action, int mods);
+    void OnDown(int key, int action, int mods);
     void OnEscape(int key, int action, int mods);
 
 private:
@@ -91,6 +93,10 @@ private:
 
     glm::vec3 lightColor_ = glm::vec3(1.0f, 1.0f, 1.0f); // 光源颜色
     glm::vec3 objectColor_ = glm::vec3(1.0f, 0.5f, 0.31f); // 物体颜色
+    float ambientStrength_ = 0.1; // 环境光强度
+    glm::vec3 lightPos_ = { 1.2, 1.1, 1.2 }; // 光源位置
+    float specularStrength_ = 0.5; // 镜面反射强度
+    int shininess_ = 32; // 反光度，高光系数
 
     // 可扩展的按键处理器支持
     struct KeyCombo {

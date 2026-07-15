@@ -94,6 +94,10 @@ MainWindow::MainWindow(const char* title, int width, int height)
         std::bind(&MainWindow::OnS, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     RegisterKeyHandler(GLFW_KEY_D, 0,
         std::bind(&MainWindow::OnD, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    RegisterKeyHandler(GLFW_KEY_UP, 0,
+        std::bind(&MainWindow::OnUp, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    RegisterKeyHandler(GLFW_KEY_DOWN, 0,
+        std::bind(&MainWindow::OnDown, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     RegisterKeyHandler(GLFW_KEY_ESCAPE, 0,
         std::bind(&MainWindow::OnEscape, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
@@ -281,18 +285,42 @@ void MainWindow::PrepareData()
         eleIndex.push_back(base + 0);
     }
 
+    // 为每个顶点计算法向量（立方体 6 个面，每面法向量固定）
+    std::vector<float> normalsBuf;
+    glm::vec3 faceNormals[6] = {
+        glm::vec3(0.0f, 0.0f, 1.0f),   // Front (+Z)
+        glm::vec3(0.0f, 0.0f, -1.0f),  // Back (-Z)
+        glm::vec3(-1.0f, 0.0f, 0.0f),  // Left (-X)
+        glm::vec3(1.0f, 0.0f, 0.0f),   // Right (+X)
+        glm::vec3(0.0f, 1.0f, 0.0f),   // Top (+Y)
+        glm::vec3(0.0f, -1.0f, 0.0f)   // Bottom (-Y)
+    };
+    for (unsigned int face = 0; face < 6; ++face) {
+        unsigned int base = face * 4;
+        for (unsigned int i = 0; i < 4; ++i) {
+            normalsBuf.push_back(faceNormals[face].x);
+            normalsBuf.push_back(faceNormals[face].y);
+            normalsBuf.push_back(faceNormals[face].z);
+        }
+    }
+
     auto cubeMesh = std::make_shared<Mesh>();
     cubeMesh->SetIndexBuffer(eleIndex);
     cubeMesh->AddVertexBuffer(vertices);
-    int location = shader_["cube"]->GetAttrLocation("aPos");
-    cubeMesh->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    int cubePosLoc = shader_["cube"]->GetAttrLocation("aPos");
+    cubeMesh->AddVertexAttribute(cubePosLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+
+    // 添加法线属性（flat 插值，所有顶点用同一面法向量）
+    cubeMesh->AddVertexBuffer(normalsBuf);
+    int normalLocation = shader_["cube"]->GetAttrLocation("aNormal");
+    cubeMesh->AddVertexAttribute(normalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     mesh_["cube"] = cubeMesh;
 
     auto lampMesh = std::make_shared<Mesh>();
     lampMesh->SetIndexBuffer(eleIndex);
     lampMesh->AddVertexBuffer(vertices);
-    location = shader_["lamp"]->GetAttrLocation("aPos");
-    lampMesh->AddVertexAttribute(location, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    auto lampPosLoc = shader_["lamp"]->GetAttrLocation("aPos");
+    lampMesh->AddVertexAttribute(lampPosLoc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     mesh_["lamp"] = lampMesh;
 }
 
@@ -315,8 +343,8 @@ void MainWindow::PrepareShader()
 
 void MainWindow::PrepareTexture()
 {
-    texture_ = std::make_shared<Texture>();
-    texture_->LoadFromFile("assets/image/gugugaga.jpeg", 0);
+    //texture_ = std::make_shared<Texture>();
+    //texture_->LoadFromFile("assets/image/gugugaga.jpeg", 0);
 }
 
 void MainWindow::PrepareScene()
@@ -349,6 +377,11 @@ void MainWindow::PrepareScene()
         shader->SetUniformMat4f("projection", glm::value_ptr(projection));
         shader->SetUniformVec3f("lightColor", glm::value_ptr(lightColor_));
         shader->SetUniformVec3f("objectColor", glm::value_ptr(objectColor_));
+        shader->SetUniform1f("ambientStrength", ambientStrength_);
+        shader->SetUniformVec3f("lightPos", glm::value_ptr(lightPos_));
+        shader->SetUniformVec3f("viewPos", glm::value_ptr(camera_->GetPosition()));
+        shader->SetUniform1f("specularStrength", specularStrength_);
+        shader->SetUniform1i("shininess", shininess_);
     };
 
     for (int i = 0; i < cubePositions.size(); ++i) {
@@ -360,7 +393,7 @@ void MainWindow::PrepareScene()
 
         auto transform = std::make_shared<Transform>();
         transform->SetPosition(cubePositions[i]);
-        transform->SetRotation(glm::vec3(-45.0f, 0.0f, 45.0f));
+        transform->SetRotation(glm::vec3(30.0f, 45.0f, 0.0f));
         if (i > 0) {
             transform->Rotate(glm::vec3(0.0f, i * 10.0f, 0.0f));
         }
@@ -390,7 +423,7 @@ void MainWindow::PrepareScene()
         ctx.SetUniformSetter(lampUniformSetter);
 
         auto transform = std::make_shared<Transform>();
-        transform->SetPosition({ 1.2, 1.1, 1.2});
+        transform->SetPosition(lightPos_);
         transform->SetScale({ 0.2, 0.2, 0.2 });
         ctx.SetTransform(transform);
 
@@ -496,6 +529,27 @@ void MainWindow::BeforeRender()
             objectColor_[2] = 0.31f;
         }
 
+        // Ambient Strength 调节
+        {
+            static float ambientStrength = ambientStrength_;
+            ImGui::SliderFloat("Ambient Strength", &ambientStrength, 0.0f, 1.0f);
+            ambientStrength_ = ambientStrength;
+        }
+
+        // Sepcular Strength 调节
+        {
+            static float specularStrength = specularStrength_;
+            ImGui::SliderFloat("Sepcular Strength", &specularStrength, 0.0f, 1.0f);
+            specularStrength_ = specularStrength;
+        }
+
+        // Shininess 调节
+        {
+            static int shininess = shininess_;
+            ImGui::SliderInt("Shininess", &shininess, 2, 256);
+            shininess_ = shininess;
+        }
+
         ImGui::End();
 
         // 这里可以创建其他 ImGui 窗口...
@@ -557,6 +611,20 @@ void MainWindow::OnD(int key, int action, int mods)
 {
     if (action == GLFW_REPEAT) {
         camera_->ProcessKeyboard(CameraDirection::RIGHT, deltaTime_);
+    }
+}
+
+void MainWindow::OnUp(int key, int action, int mods)
+{
+    if (action == GLFW_REPEAT) {
+        camera_->ProcessKeyboard(CameraDirection::UP, deltaTime_);
+    }
+}
+
+void MainWindow::OnDown(int key, int action, int mods)
+{
+    if (action == GLFW_REPEAT) {
+        camera_->ProcessKeyboard(CameraDirection::DOWN, deltaTime_);
     }
 }
 
